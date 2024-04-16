@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <assert.h>
 
 #define NAME "rm (canoutils)"
 #define VERSION "1.0.0"
 #define AUTHOR "CobbCoding"
 
 char **shift(int *argc, char ***argv);
+int rm(char *filename);
 
 #define print_version()                                                        \
   do {                                                                         \
@@ -19,6 +22,13 @@ char **shift(int *argc, char ***argv) {
   *argc -= 1;
   return result;
 }
+  
+int rm(char *filename) {
+  assert(filename != NULL);
+  int err = remove(filename);
+  if(err == -1) exit(1);
+  return err;
+}
 
 int main(int argc, char **argv) {
   char *program = *shift(&argc, &argv);
@@ -28,9 +38,13 @@ int main(int argc, char **argv) {
   char *flag = *shift(&argc, &argv);
   if(strcmp(flag, "--version") == 0) {
     print_version();
+    return 0;
+  } else if(strcmp(flag, "--help") == 0) {
+    system("man rm");
   } else {
     filename = flag;
-    printf("%s\n", filename);
   }
+  
+  rm(filename);
   return 0;
 }
