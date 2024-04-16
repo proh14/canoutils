@@ -1,0 +1,6 @@
+-Wall
+-Wextra
+-pedantic
+-std=c99
+-MMD
+-MP
