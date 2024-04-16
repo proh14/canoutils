@@ -22,7 +22,8 @@ CFLAGS += -iquote src
 
 LDFLAGS := -fwhole-program -flto
 LDFLAGS += -Wl,--gc-sections
-BUILD_DIR := .build
+
+BUILD_DIR := $/.build
 
 LDFLAGS := -fwhole-program -flto
 
@@ -48,8 +49,8 @@ clean:
 	$(RM) $(OBJ)
 
 .PHONY: fclean
-fclean: clean
-	$(RM) -r $(BUILD_DIR) $(OUT) $(OUT_DEBUG)
+fclean:
+	$(RM) -r $(OBJ) $(BUILD_DIR) $(OUT)
 
 .PHONY: re
 .NOTPARALLEL: re

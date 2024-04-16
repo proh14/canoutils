@@ -1,3 +1,4 @@
+/ := ./
 include base.mk
 
 BINS := date
@@ -24,18 +25,22 @@ BINS += mv
 BINS += chmod
 BINS += sh
 
-MK-BIN-PATH = src/$(strip $(1))/$(strip $(1))
-BINARIES := $(foreach b, $(BINS), $(call MK-BIN-PATH, $b))
+BINARIES := $(foreach b, $(BINS), src/$b/$b)
+BINS-COPY := $(foreach b, $(BINS), bins/$b)
 
 define make-rule
-@ $(MAKE) -C $(1) $(2) --no-print-directory
+@ $(MAKE) -C $(1) $(2) --no-print-directory /=$(realpath .)/
 
 endef
 
 prop = $(foreach b, $(BINARIES), $(call make-rule, $(dir $b), $(1)))
 
 .PHONY: all
-all: $(BINARIES)
+all: $(BINS-COPY)
+
+$(BINS-COPY): $(BINARIES)
+	@ mkdir -p $(dir $@)
+	$Q cp $< $@ 
 
 $(BINARIES):
 	$(call make-rule, $(dir $@), $(notdir $@))
@@ -48,8 +53,9 @@ clean:
 .PHONY: fclean
 fclean:
 	$(call prop, fclean)
+	$(RM) -r bins
 	@ $(LOG_TIME) $@
 
 .PHONY: re
-re:
-	$(call prop, re)
+.NOTPARALLEL: re
+re: fclean all
