@@ -81,3 +81,12 @@ bin/
 
 # config
 .fast
+
+# Nix
+.direnv
+.envrc
+result
+
+# config
+.cache
+compile_commands.json
