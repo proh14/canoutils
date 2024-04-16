@@ -77,7 +77,7 @@ src/rmdir/rmdir
 src/sh/sh
 src/sleep/sleep
 
-bins/
+bin/
 
 # config
 .fast

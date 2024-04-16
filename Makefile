@@ -26,7 +26,7 @@ BINS += chmod
 BINS += sh
 
 BINARIES := $(foreach b, $(BINS), src/$b/$b)
-BINS-COPY := $(foreach b, $(BINS), bins/$b)
+BINS-COPY := $(foreach b, $(BINS), bin/$b)
 
 define make-rule
 @ $(MAKE) -C $(1) $(2) --no-print-directory /=$(realpath .)/
