@@ -50,3 +50,32 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Binaries
+src/cat/cat
+src/chio/chio
+src/chmod/chmod
+src/cp/cp
+src/date/date
+src/dd/dd
+src/df/df
+src/domainname/domainname
+src/echo/echo
+src/ed/ed
+src/expr/expr
+src/hostname/hostname
+src/kill/kill
+src/ln/ln
+src/ls/ls
+src/md5/md5
+src/mkdir/mkdir
+src/mv/mv
+src/ps/ps
+src/pwd/pwd
+src/rm/rm
+src/rmdir/rmdir
+src/sh/sh
+src/sleep/sleep
+
+# config
+.fast
