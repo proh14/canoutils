@@ -29,7 +29,7 @@ BINARIES := $(foreach b, $(BINS), src/$b/$b)
 BINS-COPY := $(foreach b, $(BINS), bin/$b)
 
 define make-rule
-@ $(MAKE) -C $(1) $(2) --no-print-directory /=$(realpath .)/
+@ $(MAKE) -C $(1) $(2) --no-print-directory /=../../
 
 endef
 
@@ -53,7 +53,7 @@ clean:
 .PHONY: fclean
 fclean:
 	$(call prop, fclean)
-	$(RM) -r bins
+	$(RM) -r bin
 	@ $(LOG_TIME) $@
 
 .PHONY: re

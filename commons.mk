@@ -1,23 +1,9 @@
 CC = gcc
 
-CFLAGS := -std=c99 -pedantic
-CFLAGS += -MMD -MP
-CFLAGS += -pipe
+CFLAGS := @$/compile_flags.txt
 
-CFLAGS += -O2 -march=native -mtune=native
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -Wp,-U_FORTIFY_SOURCE
-
-CFLAGS += -Wall -Wextra
-CFLAGS += -Wcast-qual
-CFLAGS += -Wconversion
-CFLAGS += -Werror=return-type
-CFLAGS += -Werror=vla-larger-than=0
-CFLAGS += -Wmissing-prototypes
-CFLAGS += -Wshadow
-CFLAGS += -Wstrict-prototypes
-CFLAGS += -Wwrite-strings
-
 CFLAGS += -iquote src
 
 LDFLAGS := -fwhole-program -flto
