@@ -35,6 +35,7 @@ int rm(char *filename);
     print_not_enough();  \
   }  \
   flag = *shift(&argc, &argv);  \
+  filename = flag;  \
   } while(0)
 
 char **shift(int *argc, char ***argv) {
@@ -87,15 +88,12 @@ int main(int argc, char **argv) {
   } else if (strcmp(flag, "-v") == 0) {
     verbose = true;
     shift_flags();
-    filename = flag;    
   } else if(strcmp(flag, "-i") == 0) {
     prompt_every = true;
     shift_flags();    
-    filename = flag;    
   } else if(strcmp(flag, "-d") == 0) {
     remove_dir = true;
     shift_flags();     
-    filename = flag;
   } else {
     filename = flag;
   }
