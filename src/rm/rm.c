@@ -14,6 +14,7 @@ bool verbose = false;
 bool prompt_every = false;
 bool remove_dir = false;
 bool force = false;
+bool intrusive = false;
 
 char **shift(int *argc, char ***argv);
 int rm(char *filename);
@@ -81,6 +82,7 @@ int main(int argc, char **argv) {
     
   shift_flags();
   
+  // TODO: stacking flags (i.e. rm -rf)
   if (strcmp(flag, "--version") == 0) {
     print_version();
     return 0;
@@ -94,8 +96,8 @@ int main(int argc, char **argv) {
     prompt_every = true;
     shift_flags();    
   } else if(strcmp(flag, "-I") == 0) {
-    assert(false && "not implemented yet");
-    shift_flags();    
+    intrusive = true;
+    shift_flags();     
   } else if(strcmp(flag, "-d") == 0) {
     remove_dir = true;
     shift_flags();     
@@ -119,6 +121,17 @@ int main(int argc, char **argv) {
     shift_flags();
   } else {
     filename = flag;
+  }
+    
+  if(argc > 2 && intrusive) {
+    printf("remove %d files? ", argc+1);
+    char prompt[16] = {0};
+    int err = scanf("%s", prompt);
+    if(err == EOF) {
+      fprintf(stderr, "error: EOF\n");
+      exit(1);
+    }
+    if(strncmp(prompt, "y", sizeof("y")) != 0) exit(0);
   }
 
   while (argc >= 0) {
