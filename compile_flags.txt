@@ -6,14 +6,6 @@
 
 -Wall
 -Wextra
--Wcast-qual
--Wconversion
--Werror=return-type
--Werror=vla-larger-than=0
--Wmissing-prototypes
--Wshadow
--Wstrict-prototypes
--Wwrite-strings
 
 -O2
 -march=native
