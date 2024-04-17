@@ -127,8 +127,8 @@ int main(int argc, char **argv) {
   if (argc > 2 && intrusive) {
     printf("remove %d files? ", argc + 1);
     char prompt[16] = {0};
-    int err = scanf("%s", prompt);
-    if (err == EOF) {
+    char *err = fgets(prompt, 16, stdin);
+    if (err == NULL) {
       fprintf(stderr, "error: EOF\n");
       exit(1);
     }
@@ -140,8 +140,8 @@ int main(int argc, char **argv) {
     if (prompt_every) {
       printf("remove file `%s`? ", filename);
       char prompt[16] = {0};
-      int err = scanf("%s", prompt);
-      if (err == EOF) {
+      char *err = fgets(prompt, 16, stdin);
+      if (err == NULL) {
         fprintf(stderr, "error: EOF\n");
         exit(1);
       }
