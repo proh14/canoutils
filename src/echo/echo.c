@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define NAME "echo (canoutils)"
@@ -9,6 +10,13 @@
   do {                                                                         \
     printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
   } while (0)
+
+int ishex(int c) {
+  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+         (c >= 'A' && c <= 'F');
+}
+
+int isoctal(int c) { return (c >= '0' && c <= '7'); }
 
 int main(int argc, char **argv) {
   int escape = 0;
@@ -34,9 +42,21 @@ int main(int argc, char **argv) {
     i++;
   }
 
+  if (strcmp(argv[1], "-en") == 0 || strcmp(argv[1], "-ne") == 0) {
+    escape = 1;
+    new_line = 0;
+    i++;
+  }
+
+  if (strcmp(argv[1], "--help") == 0) {
+    system("man echo");
+    return 0;
+  }
+
   while (argv[i] != NULL) {
     for (int j = 0; argv[i][j] != '\0'; j++) {
       if (escape && argv[i][j] == '\\') {
+        int add = 1;
         switch (argv[i][j + 1]) {
         case '\\':
           putchar('\\');
@@ -68,11 +88,50 @@ int main(int argc, char **argv) {
         case 'v':
           putchar('\v');
           break;
+        case 'x':
+          if (argv[i][j + 2] == '\0') {
+            break;
+          }
+          char hex[3] = {argv[i][j + 2], argv[i][j + 3], '\0'};
+          if (ishex(hex[0])) {
+            add = 3;
+            if (!ishex(hex[1])) {
+              hex[1] = '\0';
+              add--;
+              break;
+            }
+            unsigned value = 0;
+            sscanf(hex, "%x", &value);
+            putchar((int)value);
+          }
+          break;
+        case '0':
+          if (argv[i][j + 2] == '\0') {
+            break;
+          }
+          char octal[4] = {argv[i][j + 2], argv[i][j + 3], argv[i][j + 4],
+                           '\0'};
+          if (isoctal(octal[0])) {
+            add = 4;
+            if (!isoctal(octal[1])) {
+              hex[1] = '\0';
+              add -= 2;
+            } else if (!isoctal(octal[2])) {
+              hex[2] = '\0';
+              add--;
+            }
+            unsigned value = 0;
+            sscanf(octal, "%o", &value);
+            putchar((int)value);
+          }
+          break;
         default:
+          add = 0;
+          putchar(argv[i][j]);
           break;
         }
         if (argv[i][j + 1] != '\0')
-          j++;
+          j += add;
       } else {
         putchar(argv[i][j]);
       }
