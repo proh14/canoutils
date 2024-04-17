@@ -1,0 +1,20 @@
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  check_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v26
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - run: |
+          nix flake show --json            \
+            | nix run nixpkgs#jq .packages \
+            | sort | uniq                  \
+            | grep '"name"'                \
+            | cut -d '"' -f 4              \
+            | xargs -i nix build .#{} --show-trace
