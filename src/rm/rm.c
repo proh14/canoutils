@@ -53,21 +53,32 @@ int rm(char *filename) {
   if (!remove_dir && is_dir != NULL) {
     fprintf(stderr, "`%s` is a directory\n", filename);
     if (!force)
-      exit(1);
+      goto rm_defer;
   }
   if (!is_dir || remove_dir) {
     int err = remove(filename);
     if (err == -1 && !force) {
       fprintf(stderr, "could not remove file `%s`\n", filename);
-      exit(1);
+      goto rm_defer;
     }
 
     if (verbose) {
       printf("removing `%s`\n", filename);
     }
   }
-
+  if (is_dir != NULL && closedir(is_dir) == -1) {
+    fprintf(stderr, "could not close dir %s\n", filename);
+  }
   return 0;
+
+rm_defer:
+  if (is_dir != NULL) {
+    if (closedir(is_dir) == -1) {
+      fprintf(stderr, "could not close dir %s\n", filename);
+    }
+    exit(1);
+  }
+  return 1;
 }
 
 int main(int argc, char **argv) {
