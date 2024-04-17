@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #define NAME "rm (canoutils)"
 #define VERSION "1.0.0"
@@ -15,8 +18,12 @@ bool prompt_every = false;
 bool remove_dir = false;
 bool force = false;
 bool intrusive = false;
+bool preserve_root = true;
+bool recurse = false;
 
 char **shift(int *argc, char ***argv);
+void remove_recursively(DIR *dir, size_t depth);
+void rm_dir(char *filename);
 int rm(char *filename);
 
 #define print_version()                                                        \
@@ -47,14 +54,77 @@ char **shift(int *argc, char ***argv) {
   return result;
 }
 
+#define DT_DIR 4
+#define DT_REG 8
+
+void rm_dir(char *filename) {
+    int err = remove(filename);
+    if (err == -1 && !force) {
+      fprintf(stderr, "could not remove file `%s`\n", filename);
+      exit(1);
+    }
+
+    if (verbose) {
+      printf("removing `%s`\n", filename);
+    }
+}
+	
+void remove_recursively(DIR *dir, size_t depth) {
+    assert(dir);
+	struct dirent *file = readdir(dir);
+	while(file != NULL) {
+		if(file->d_type == DT_REG) {
+			rm(file->d_name);
+		} else if(file->d_type == DT_DIR) {
+            if(strncmp(file->d_name, ".", 1) == 0) {
+              file = readdir(dir);
+              continue;
+            }
+			DIR *new_dir = opendir(file->d_name);
+            if(chdir(file->d_name) == -1) {
+              fprintf(stderr, "couldn't change directories %d\n", errno);
+              exit(1);
+            }
+			remove_recursively(new_dir, depth+1);
+            for(size_t i = 0; i <= depth; i++) {
+              if(chdir("..") == -1) {
+                fprintf(stderr, "could not change directories %d\n", errno);
+                exit(1);
+              }
+            }
+			closedir(new_dir);
+			rm_dir(file->d_name);
+		} else {
+          fprintf(stderr, "error\n");
+          exit(1);
+        }
+        file = readdir(dir);
+	}
+}
+
 int rm(char *filename) {
   assert(filename != NULL);
-  void *is_dir = opendir(filename);
-  if (!remove_dir && is_dir != NULL) {
+  DIR *is_dir = opendir(filename);
+  if (!remove_dir && is_dir != NULL && !recurse) {
     fprintf(stderr, "`%s` is a directory\n", filename);
     if (!force)
       goto rm_defer;
   }
+
+  if(is_dir != NULL && recurse) {
+    if(chdir(filename) == -1) {
+      fprintf(stderr, "could not change directories\n");
+      exit(1);
+    }
+    remove_recursively(opendir("."), 0);
+    if(chdir("..") == -1) {
+      fprintf(stderr, "could not change directories\n");
+      exit(1);
+    }
+    rm_dir(filename);
+    goto rm_end;
+  }
+
   if (!is_dir || remove_dir) {
     int err = remove(filename);
     if (err == -1 && !force) {
@@ -69,6 +139,8 @@ int rm(char *filename) {
   if (is_dir != NULL && closedir(is_dir) == -1) {
     fprintf(stderr, "could not close dir %s\n", filename);
   }
+
+rm_end:
   return 0;
 
 rm_defer:
@@ -117,13 +189,13 @@ int main(int argc, char **argv) {
     force = true;
     shift_flags();
   } else if (strcmp(flag, "-r") == 0) {
-    assert(false && "not implemented yet");
+    recurse = true;
     shift_flags();
   } else if (strcmp(flag, "--no-preserve-root") == 0) {
-    assert(false && "not implemented yet");
+	preserve_root = false;
     shift_flags();
   } else if (strcmp(flag, "--preserve-root") == 0) {
-    assert(false && "not implemented yet");
+	preserve_root = true;
     shift_flags();
   } else if (strcmp(flag, "--one-file-system") == 0) {
     assert(false && "not implemented yet");
@@ -148,6 +220,11 @@ int main(int argc, char **argv) {
   }
 
   while (argc >= 0) {
+	if(strcmp(filename, "/") == 0) {
+		printf("cannot remove root directory (see --no-preserve-root)\n");
+		filename = *shift(&argc, &argv);
+		continue;
+	}
     if (prompt_every) {
       printf("remove file `%s`? ", filename);
       char prompt[16] = {0};
