@@ -13,6 +13,7 @@
 bool verbose = false;
 bool prompt_every = false;
 bool remove_dir = false;
+bool force = false;
 
 char **shift(int *argc, char ***argv);
 int rm(char *filename);
@@ -47,23 +48,24 @@ char **shift(int *argc, char ***argv) {
 
 int rm(char *filename) {
   assert(filename != NULL);
-  if(!remove_dir) {
-    if (opendir(filename) != NULL) {
-      fprintf(stderr, "`%s` is a directory\n", filename);
+  void *is_dir = opendir(filename);
+  if(!remove_dir && is_dir != NULL) {
+    fprintf(stderr, "`%s` is a directory\n", filename);
+    if(!force) exit(1);
+  }
+  if(!is_dir || remove_dir) {
+     int err = remove(filename); 
+    if (err == -1 && !force) {
+      fprintf(stderr, "could not remove file `%s`\n", filename);
       exit(1);
     }
-  }
-  int err = remove(filename);
-  if (err == -1) {
-    fprintf(stderr, "could not remove file `%s`\n", filename);
-    exit(1);
-  }
-
-  if(verbose) {
-    printf("removing `%s`\n", filename); 
+  
+    if(verbose) {
+      printf("removing `%s`\n", filename); 
+    }
   }
     
-  return err;
+  return 0;
 }
 
 int main(int argc, char **argv) {
@@ -91,9 +93,30 @@ int main(int argc, char **argv) {
   } else if(strcmp(flag, "-i") == 0) {
     prompt_every = true;
     shift_flags();    
+  } else if(strcmp(flag, "-I") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();    
   } else if(strcmp(flag, "-d") == 0) {
     remove_dir = true;
     shift_flags();     
+  } else if(strcmp(flag, "-f") == 0) {
+    force = true;
+    shift_flags();
+  } else if(strcmp(flag, "-r") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();
+  } else if(strcmp(flag, "--no-preserve-root") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();
+  } else if(strcmp(flag, "--preserve-root") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();
+  } else if(strcmp(flag, "--one-file-system") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();
+  } else if(strcmp(flag, "--interactive") == 0) {
+    assert(false && "not implemented yet");
+    shift_flags();
   } else {
     filename = flag;
   }
@@ -111,6 +134,11 @@ int main(int argc, char **argv) {
         filename = *shift(&argc, &argv);
         continue;
       }
+    }
+      
+    if(strcmp(filename, "/") == 0) {
+      fprintf(stderr, "cannot remove root directory. See --no-preserve-root\n");
+      exit(1);
     }
     rm(filename);
     filename = *shift(&argc, &argv);
