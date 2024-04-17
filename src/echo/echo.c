@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +11,6 @@
   do {                                                                         \
     printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
   } while (0)
-
-int ishex(int c) {
-  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
-         (c >= 'A' && c <= 'F');
-}
 
 int isoctal(int c) { return (c >= '0' && c <= '7'); }
 
@@ -93,9 +89,9 @@ int main(int argc, char **argv) {
             break;
           }
           char hex[3] = {argv[i][j + 2], argv[i][j + 3], '\0'};
-          if (ishex(hex[0])) {
+          if (isxdigit(hex[0])) {
             add = 3;
-            if (!ishex(hex[1])) {
+            if (!isxdigit(hex[1])) {
               hex[1] = '\0';
               add--;
               break;
