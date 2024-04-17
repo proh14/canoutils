@@ -30,15 +30,15 @@ int rm(char *filename);
     fprintf(stderr, "see rm --help\n");                                        \
     exit(1);                                                                   \
   } while (0)
-  
-#define shift_flags()  \
-  do {  \
-  if (argc == 0) {  \
-    print_not_enough();  \
-  }  \
-  flag = *shift(&argc, &argv);  \
-  filename = flag;  \
-  } while(0)
+
+#define shift_flags()                                                          \
+  do {                                                                         \
+    if (argc == 0) {                                                           \
+      print_not_enough();                                                      \
+    }                                                                          \
+    flag = *shift(&argc, &argv);                                               \
+    filename = flag;                                                           \
+  } while (0)
 
 char **shift(int *argc, char ***argv) {
   char **result = *argv;
@@ -50,22 +50,23 @@ char **shift(int *argc, char ***argv) {
 int rm(char *filename) {
   assert(filename != NULL);
   void *is_dir = opendir(filename);
-  if(!remove_dir && is_dir != NULL) {
+  if (!remove_dir && is_dir != NULL) {
     fprintf(stderr, "`%s` is a directory\n", filename);
-    if(!force) exit(1);
+    if (!force)
+      exit(1);
   }
-  if(!is_dir || remove_dir) {
-     int err = remove(filename); 
+  if (!is_dir || remove_dir) {
+    int err = remove(filename);
     if (err == -1 && !force) {
       fprintf(stderr, "could not remove file `%s`\n", filename);
       exit(1);
     }
-  
-    if(verbose) {
-      printf("removing `%s`\n", filename); 
+
+    if (verbose) {
+      printf("removing `%s`\n", filename);
     }
   }
-    
+
   return 0;
 }
 
@@ -79,9 +80,9 @@ int main(int argc, char **argv) {
     fprintf(stderr, "see rm --help\n");
     exit(1);
   }
-    
+
   shift_flags();
-  
+
   // TODO: stacking flags (i.e. rm -rf)
   if (strcmp(flag, "--version") == 0) {
     print_version();
@@ -92,64 +93,65 @@ int main(int argc, char **argv) {
   } else if (strcmp(flag, "-v") == 0) {
     verbose = true;
     shift_flags();
-  } else if(strcmp(flag, "-i") == 0) {
+  } else if (strcmp(flag, "-i") == 0) {
     prompt_every = true;
-    shift_flags();    
-  } else if(strcmp(flag, "-I") == 0) {
+    shift_flags();
+  } else if (strcmp(flag, "-I") == 0) {
     intrusive = true;
-    shift_flags();     
-  } else if(strcmp(flag, "-d") == 0) {
+    shift_flags();
+  } else if (strcmp(flag, "-d") == 0) {
     remove_dir = true;
-    shift_flags();     
-  } else if(strcmp(flag, "-f") == 0) {
+    shift_flags();
+  } else if (strcmp(flag, "-f") == 0) {
     force = true;
     shift_flags();
-  } else if(strcmp(flag, "-r") == 0) {
+  } else if (strcmp(flag, "-r") == 0) {
     assert(false && "not implemented yet");
     shift_flags();
-  } else if(strcmp(flag, "--no-preserve-root") == 0) {
+  } else if (strcmp(flag, "--no-preserve-root") == 0) {
     assert(false && "not implemented yet");
     shift_flags();
-  } else if(strcmp(flag, "--preserve-root") == 0) {
+  } else if (strcmp(flag, "--preserve-root") == 0) {
     assert(false && "not implemented yet");
     shift_flags();
-  } else if(strcmp(flag, "--one-file-system") == 0) {
+  } else if (strcmp(flag, "--one-file-system") == 0) {
     assert(false && "not implemented yet");
     shift_flags();
-  } else if(strcmp(flag, "--interactive") == 0) {
+  } else if (strcmp(flag, "--interactive") == 0) {
     assert(false && "not implemented yet");
     shift_flags();
   } else {
     filename = flag;
   }
-    
-  if(argc > 2 && intrusive) {
-    printf("remove %d files? ", argc+1);
+
+  if (argc > 2 && intrusive) {
+    printf("remove %d files? ", argc + 1);
     char prompt[16] = {0};
     int err = scanf("%s", prompt);
-    if(err == EOF) {
+    if (err == EOF) {
       fprintf(stderr, "error: EOF\n");
       exit(1);
     }
-    if(strncmp(prompt, "y", sizeof("y")) != 0) exit(0);
+    if (strncmp(prompt, "y", sizeof("y")) != 0)
+      exit(0);
   }
 
   while (argc >= 0) {
-    if(prompt_every) {
+    if (prompt_every) {
       printf("remove file `%s`? ", filename);
       char prompt[16] = {0};
       int err = scanf("%s", prompt);
-      if(err == EOF) {
+      if (err == EOF) {
         fprintf(stderr, "error: EOF\n");
         exit(1);
       }
-      if(strncmp(prompt, "y", sizeof("y")-1) != 0) {
+      if (strncmp(prompt, "y", sizeof("y") - 1) != 0) {
         filename = *shift(&argc, &argv);
         continue;
       }
     }
-      
-    if(strcmp(filename, "/") == 0) {
+
+    if (strcmp(filename, "/") == 0) {
       fprintf(stderr, "cannot remove root directory. See --no-preserve-root\n");
       exit(1);
     }
