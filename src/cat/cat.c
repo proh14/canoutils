@@ -30,7 +30,11 @@
 #define ARGS_MAX 16 // number of the max arguments
 #define ARGS_LEN 32
 
-int cat(int filec, char **paths, int argc, char **argv);
+bool E = false; // show ends
+bool n = false; // number
+bool T = false; // show tabs
+
+int cat(int filec, char **paths);
 int print_file(char *buf);
 
 int main(int argc, char **argv) {
@@ -67,65 +71,43 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // arguments for the `cat` function
-  int cat_argc = 0;
-  char **cat_argv = (char **)malloc(sizeof(char) * ARGS_LEN * ARGS_MAX);
-  if (!cat_argv) {
-    perror("could not allocate memory");
-    free(paths);
-    exit(1);
-  }
-
   // parse arguments
   for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], "-E") == 0 || strcmp(argv[i], "--show-ends") == 0
-        || strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0
-        || strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
-      cat_argv[cat_argc++] = argv[i];
-    } else {
-      if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
-        fprintf(stderr, "file `%s` not found\n", argv[i]);
-        free(paths);
-        free(cat_argv);
-        exit(1);
-      }
-
-      paths[filec++] = argv[i];
-    }
-  }
-
-  if (cat(filec, paths, cat_argc, cat_argv) != 0) {
-    free(paths);
-    free(cat_argv);
-    exit(1);
-  }
-
-  free(paths);
-  free(cat_argv);
-
-  return 0;
-}
-
-bool E = false; // show ends
-bool n = false; // number
-bool T = false; // show tabs
-
-int cat(int filec, char **paths, int argc, char **argv) {
-  // cat arguments
-  /* bool A, b, e, E, n, s, t, T, u, v; */
-  for (int i = 0; i < argc; ++i) {
     if (strcmp(argv[i], "-E") == 0 || strcmp(argv[i], "--show-ends") == 0) {
       E = true;
+      continue;
     }
     if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
       n = true;
       printf(" 1  ");
+      continue;
     }
     if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
       T = true;
+      continue;
+    } else {
+      if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
+        fprintf(stderr, "file `%s` not found\n", argv[i]);
+        free(paths);
+        exit(1);
+      }
+
+      paths[filec++] = argv[i];
+      continue;
     }
   }
 
+  if (cat(filec, paths) != 0) {
+    free(paths);
+    exit(1);
+  }
+
+  free(paths);
+
+  return 0;
+}
+
+int cat(int filec, char **paths) {
   for (int i = 0; i < filec; ++i) {
     // read from stdin
     if (strcmp(paths[i], "-") == 0) {
