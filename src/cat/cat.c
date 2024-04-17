@@ -6,7 +6,7 @@
 
 #define NAME "cat (canoutils)"
 #define VERSION "1.0.0"
-#define AUTHOR "SzAkos04"
+#define AUTHOR "Akos Szijgyarto (SzAkos04)"
 
 #define print_version() \
   do { \
