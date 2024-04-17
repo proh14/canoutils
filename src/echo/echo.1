@@ -1,1 +1,80 @@
-\" TODO
+.TH ECHO "1" "January 2024" "canoutils" "User Commands"
+.SH NAME
+echo \- display a line of text
+.SH SYNOPSIS
+.B echo
+[\fI\,SHORT-OPTION\/\fR]... [\fI\,STRING\/\fR]...
+.br
+.B echo
+\fI\,LONG-OPTION\/\fR
+.SH DESCRIPTION
+.PP
+Echo the STRING(s) to standard output.
+.TP
+\fB\-n\fR
+do not output the trailing newline
+.TP
+\fB\-e\fR
+enable interpretation of backslash escapes
+.TP
+.TP
+\fB\-\-help\fR
+display this help and exit
+.TP
+\fB\-\-version\fR
+output version information and exit
+.PP
+If \fB\-e\fR is in effect, the following sequences are recognized:
+.TP
+\e\e
+backslash
+.TP
+\ea
+alert (BEL)
+.TP
+\eb
+backspace
+.TP
+\ec
+produce no further output
+.TP
+\ee
+escape (x1B)
+.TP
+\ef
+form feed
+.TP
+\en
+new line
+.TP
+\er
+carriage return
+.TP
+\et
+horizontal tab
+.TP
+\ev
+vertical tab
+.TP
+\e0NNN
+byte with octal value NNN (1 to 3 digits)
+.TP
+\exHH
+byte with hexadecimal value HH (1 to 2 digits)
+.SH NOTES
+.PP
+NOTE: your shell may have its own version of echo, which usually supersedes
+the version described here.  Please refer to your shell's documentation
+for details about the options it supports.
+.PP
+NOTE: \fBprintf\fP(1) is a preferred alternative,
+which does not have issues outputting option\-like strings.
+.SH AUTHOR
+Written by Hoorad Farrokh (proh14).
+.SH BUGS
+Report anybugs or issues at <\fIhttps://github.com/proh14/canoutils/issues\fR>.
+.SH COPYRIGHT
+Unlicensed ;) <\fIhttps://unlicense.org/\fR>.
+.br
+.SH "SEE ALSO"
+\fBprintf\fP(1)
