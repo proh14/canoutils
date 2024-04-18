@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -180,27 +181,56 @@ int cat(int filec, char **paths) {
   return 0;
 }
 
+#define NUMBER_BEFORE 6
+
+#define PRINT_N_SPACES(n)                                                      \
+  do {                                                                         \
+    for (int i = 0; i < n; ++i) {                                              \
+      putchar(' ');                                                            \
+    }                                                                          \
+  } while (0)
+
 int print_file(char *buf) {
   int lines = 1;
+  char line_str[11];
   if (number) {
-    printf("   %d  ", lines); // print number before the first line
+    printf("     %d  ", lines); // print number before the first line
   }
   if (number_nonblank) {
-    // TODO: check for the first non-empty line
-    printf("   %d  ", lines); // print number before the first line
+    if (buf[0] != '\n' && buf[1] != '\0') {
+      printf("     %d  ", lines); // print number before the first line
+    }
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
     if (number_nonblank && buf[i] == '\n' && buf[i + 1] != '\n' &&
         buf[i + 1] != '\0') {
-      printf("\n   %i  ", ++lines);
+      snprintf(line_str, sizeof(line_str), "%d", lines);
+      int len = strlen(line_str);
+      // check if the line number is a power of 10
+      // one off because the whole thing writes numbers one off
+      if (log10(lines + 1) == (int)log10(lines + 1)) {
+        len++;
+      }
+      putchar('\n');
+      PRINT_N_SPACES(NUMBER_BEFORE - len);
+      printf("%i  ", ++lines);
       continue;
     }
     if (show_ends && buf[i] == '\n') {
       putchar('$');
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
-      printf("\n   %i  ", ++lines);
+      snprintf(line_str, sizeof(line_str), "%d", lines);
+      int len = strlen(line_str);
+      // check if the line number is a power of 10
+      // one off because the whole thing writes numbers one off
+      if (log10(lines + 1) == (int)log10(lines + 1)) {
+        len++;
+      }
+      putchar('\n');
+      PRINT_N_SPACES(NUMBER_BEFORE - len);
+      printf("%i  ", ++lines);
       continue;
     }
     if (show_tabs && buf[i] == '\t') {

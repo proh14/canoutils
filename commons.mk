@@ -12,6 +12,7 @@ LDFLAGS += -Wl,--gc-sections
 BUILD_DIR := $/.build
 
 LDFLAGS := -fwhole-program -flto
+LDFLAGS += -lm
 
 OBJ := $(SRC:%.c=$(BUILD_DIR)/%.o)
 
