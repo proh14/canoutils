@@ -111,7 +111,8 @@ int cat(int filec, char **paths) {
     // read from stdin
     if (strcmp(paths[i], "-") == 0) {
       char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
-      scanf("%s", buf);
+      // scanf("%s", buf);
+      fgets(buf, BUF_MAX_LEN, stdin);
       if (!buf) {
         perror("could not allocate memory");
         return 1;
