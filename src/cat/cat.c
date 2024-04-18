@@ -30,6 +30,7 @@
 #define ARGS_MAX 16 // number of the max arguments
 #define ARGS_LEN 32
 
+bool b = false; // number nonblank
 bool E = false; // show ends
 bool n = false; // number
 bool T = false; // show tabs
@@ -73,12 +74,19 @@ int main(int argc, char **argv) {
 
   // parse arguments
   for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-b") == 0 ||
+        strcmp(argv[i], "--number-nonblank") == 0) {
+      b = true;
+      n = false;
+      continue;
+    }
     if (strcmp(argv[i], "-E") == 0 || strcmp(argv[i], "--show-ends") == 0) {
       E = true;
       continue;
     }
     if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
       n = true;
+      b = false;
       continue;
     }
     if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
@@ -171,10 +179,18 @@ int cat(int filec, char **paths) {
 int print_file(char *buf) {
   int lines = 1;
   if (n) {
-    printf(" %d  ", lines); // print number before the first line
+    printf("   %d  ", lines); // print number before the first line
+  }
+  if (b) {
+    // TODO: check for the first non-empty line
+    printf("   %d  ", lines); // print number before the first line
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
+    if (b && buf[i] == '\n' && buf[i + 1] != '\n' && buf[i + 1] != '\0') {
+      printf("\n   %i  ", ++lines);
+      continue;
+    }
     if (E && buf[i] == '\n') {
       putchar('$');
     }
