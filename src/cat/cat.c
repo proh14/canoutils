@@ -124,7 +124,11 @@ int cat(int filec, char **paths) {
         return 1;
       }
 
-      fgets(buf, BUF_MAX_LEN, stdin);
+      if (!fgets(buf, BUF_MAX_LEN, stdin)) {
+        perror("could not read from stdin");
+        free(buf);
+        return 1;
+      }
 
       if (print_file(buf) != 0) {
         free(buf);
@@ -196,7 +200,7 @@ int print_file(char *buf) {
       putchar('$');
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
-      printf("\n %i  ", ++lines);
+      printf("\n   %i  ", ++lines);
       continue;
     }
     if (show_tabs && buf[i] == '\t') {
