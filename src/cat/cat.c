@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
     }
     if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
       n = true;
-      printf(" 1  ");
       continue;
     }
     if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
@@ -118,6 +117,7 @@ int cat(int filec, char **paths) {
         return 1;
       }
 
+      // FIXME: This only can print out one word
       if (print_file(buf) != 0) {
         free(buf);
         return 1;
@@ -170,6 +170,9 @@ int cat(int filec, char **paths) {
 
 int print_file(char *buf) {
   int lines = 1;
+  if (n) {
+    printf(" %d  ", lines); // print number before the first line
+  }
   for (size_t i = 0; i < strlen(buf); ++i) {
     if (E && buf[i] == '\n') {
       putchar('$');
