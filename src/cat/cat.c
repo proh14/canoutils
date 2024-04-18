@@ -159,6 +159,7 @@ int cat(int filec, char **paths) {
     fclose(infile);
 
     if (print_file(buf) != 0) {
+      free(buf);
       return 1;
     }
 
