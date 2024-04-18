@@ -1,28 +1,28 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #define NAME "cat (canoutils)"
 #define VERSION "1.0.0"
 #define AUTHOR "Akos Szijgyarto (SzAkos04)"
 
-#define print_version() \
-  do { \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR); \
+#define print_version()                                                        \
+  do {                                                                         \
+    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
   } while (0)
 
-#define print_help() \
-  do { \
-    printf("Usage: cat [OPTION]... [FILE]...\n"); \
-    printf("Concatenate FILE(s) to standard output.\n"); \
+#define print_help()                                                           \
+  do {                                                                         \
+    printf("Usage: cat [OPTION]... [FILE]...\n");                              \
+    printf("Concatenate FILE(s) to standard output.\n");                       \
   } while (0)
 
-#define print_incorrect_args() \
-  do { \
-    printf("incorrect args\n"); \
-    printf("see `cat --help`\n"); \
+#define print_incorrect_args()                                                 \
+  do {                                                                         \
+    printf("incorrect args\n");                                                \
+    printf("see `cat --help`\n");                                              \
   } while (0)
 
 #define BUF_MAX_LEN 4096
@@ -111,14 +111,13 @@ int cat(int filec, char **paths) {
     // read from stdin
     if (strcmp(paths[i], "-") == 0) {
       char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
-      // scanf("%s", buf);
-      fgets(buf, BUF_MAX_LEN, stdin);
       if (!buf) {
         perror("could not allocate memory");
         return 1;
       }
 
-      // FIXME: This only can print out one word
+      fgets(buf, BUF_MAX_LEN, stdin);
+
       if (print_file(buf) != 0) {
         free(buf);
         return 1;
@@ -174,12 +173,12 @@ int print_file(char *buf) {
   if (n) {
     printf(" %d  ", lines); // print number before the first line
   }
-  for (size_t i = 0; i < strlen(buf); ++i) {
+  int len = strlen(buf);
+  for (int i = 0; i < len; ++i) {
     if (E && buf[i] == '\n') {
       putchar('$');
     }
-    if (n && buf[i] == '\n') {
-      // FIXME: this adds one more line on the end of the file
+    if (n && buf[i] == '\n' && buf[i + 1] != '\0') {
       printf("\n %i  ", ++lines);
       continue;
     }
