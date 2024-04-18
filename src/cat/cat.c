@@ -30,10 +30,10 @@
 #define ARGS_MAX 16 // number of the max arguments
 #define ARGS_LEN 32
 
-bool b = false; // number nonblank
-bool E = false; // show ends
-bool n = false; // number
-bool T = false; // show tabs
+bool number_nonblank = false; // number nonblank
+bool show_ends = false;       // show ends
+bool number = false;          // number
+bool show_tabs = false;       // show tabs
 
 int cat(int filec, char **paths);
 int print_file(char *buf);
@@ -76,21 +76,21 @@ int main(int argc, char **argv) {
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "-b") == 0 ||
         strcmp(argv[i], "--number-nonblank") == 0) {
-      b = true;
-      n = false;
+      number_nonblank = true;
+      number = false;
       continue;
     }
     if (strcmp(argv[i], "-E") == 0 || strcmp(argv[i], "--show-ends") == 0) {
-      E = true;
+      show_ends = true;
       continue;
     }
     if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
-      n = true;
-      b = false;
+      number = true;
+      number_nonblank = false;
       continue;
     }
     if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
-      T = true;
+      show_tabs = true;
       continue;
     } else {
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
@@ -162,7 +162,7 @@ int cat(int filec, char **paths) {
       free(buf);
       return 1;
     }
-    buf[file_size] = '\0';
+    buf[file_size] = '\0'; // make sure the string is null terminated
 
     fclose(infile);
 
@@ -178,27 +178,28 @@ int cat(int filec, char **paths) {
 
 int print_file(char *buf) {
   int lines = 1;
-  if (n) {
+  if (number) {
     printf("   %d  ", lines); // print number before the first line
   }
-  if (b) {
+  if (number_nonblank) {
     // TODO: check for the first non-empty line
     printf("   %d  ", lines); // print number before the first line
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
-    if (b && buf[i] == '\n' && buf[i + 1] != '\n' && buf[i + 1] != '\0') {
+    if (number_nonblank && buf[i] == '\n' && buf[i + 1] != '\n' &&
+        buf[i + 1] != '\0') {
       printf("\n   %i  ", ++lines);
       continue;
     }
-    if (E && buf[i] == '\n') {
+    if (show_ends && buf[i] == '\n') {
       putchar('$');
     }
-    if (n && buf[i] == '\n' && buf[i + 1] != '\0') {
+    if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
       printf("\n %i  ", ++lines);
       continue;
     }
-    if (T && buf[i] == '\t') {
+    if (show_tabs && buf[i] == '\t') {
       puts("^I");
       continue;
     }
