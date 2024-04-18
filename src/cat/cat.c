@@ -189,7 +189,6 @@ int print_file(char *buf) {
 
     putchar(buf[i]);
   }
-  putchar('\n');
 
   return 0;
 }
