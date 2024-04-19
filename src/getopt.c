@@ -82,7 +82,7 @@ int getopt(int argc, char **argv, const char *optstring) {
 
   optarg = argv[coropt];
 
-exit : {
+exit: {
   int i = coropt;
   int j = coropt - 1;
   while (j >= 0 && argv[j][0] != '-') {
