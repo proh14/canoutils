@@ -46,19 +46,21 @@ size_t read_directory(dirbuff_t *db, DIR *dir, char flags)
 static
 void print_error(char *dirname)
 {
+    char const *err = strerror(errno);
+
     switch (errno) {
         case ENOENT:
             fprintf(stderr,
-                "ls: cannot access '%s': No such file or directory\n",
-                dirname);
+                "ls: cannot access '%s': %s\n",
+                dirname, err);
             return;
         case EACCES:
             fprintf(stderr,
-                "ls: cannot open directory '%s': Permission denied\n",
-                dirname);
+                "ls: cannot open directory '%s': %s\n",
+                dirname, err);
             return;
         default:
-            fprintf(stderr, "Unknown error\n");
+            fprintf(stderr, "ls: %s\n", err);
     }
 }
 

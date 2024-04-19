@@ -14,6 +14,10 @@
 
     #define MIN_ALLOCATED_ENTRY (1024)
 
+    #if !defined(__clang__) || !defined (__GNUC__)
+        #define __attribute__(x) // omitted
+    #endif
+
 enum {
     F_ALL_FILES = 1 << 0,
     F_LONG_FORM = 1 << 1,
