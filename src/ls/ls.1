@@ -1,1 +1,41 @@
-\" TODO
+.Dt %N 1
+.Dd April 19, 2024
+.Dt ls 1
+.Os
+.Sh NAME
+.Nm ls
+.Nd list directory contents (Canoutils implementation)
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.TP
+.
+.Sh DESCRIPTION
+.Nm
+List information about the FILEs (the current directory by default).
+.
+.Sh OPTIONS
+\fBls\fR interprets the following options when it is invoked:
+.Pp
+.Bl -tag -width Ds
+.
+.It Fl a
+do not ignore entries starting with `.`
+.It Fl l
+use a long listing format
+.It Fl R
+list subdirectories recursively
+.It Fl d
+list directories themselves, not their contents
+.It Fl r
+reverse order while sorting
+.It Fl t
+sort by time, newest first
+.
+.El
+.
+.Sh Copyright
+This project is dedicated to the public domain, which means you're free to use it however you like. While mentioning us is optional, we'd greatly appreciate it if you would consider acknowledging our contribution.
+.Sh AUTHOR
+Canoutils `ls` was written by \fBSigmanificient\fB.
+.br
