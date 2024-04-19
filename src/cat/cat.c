@@ -41,9 +41,10 @@ int print_file(char *buf);
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    fprintf(stderr, "not enough args\n");
-    fprintf(stderr, "see `cat --help`\n");
-    exit(1);
+    if (cat(0, NULL) != 0) {
+      exit(1);
+    }
+    return 0;
   }
 
   if (strcmp(argv[1], "--version") == 0) {
@@ -74,7 +75,36 @@ int main(int argc, char **argv) {
   }
 
   // parse arguments
+  // parsing arguments like `-nET` (= `-n -E -T`)
   for (int i = 1; i < argc; ++i) {
+    int len = strlen(argv[i]);
+    if (len > 2 && argv[i][0] == '-' && argv[i][1] != '-') {
+      for (int j = 1; j < len; ++j) {
+        switch (argv[i][j]) {
+        case 'b':
+          number_nonblank = true;
+          number = false;
+          continue;
+        case 'E':
+          show_ends = true;
+          continue;
+        case 'n':
+          number = true;
+          number_nonblank = false;
+          continue;
+        case 'T':
+          show_tabs = true;
+          continue;
+        default:
+          fprintf(stderr, "unknown argument `-%c`", argv[i][j]);
+          free(paths);
+          return 1;
+        }
+      }
+      goto parsed;
+    }
+
+    // parsing individual arguments
     if (strcmp(argv[i], "-b") == 0 ||
         strcmp(argv[i], "--number-nonblank") == 0) {
       number_nonblank = true;
@@ -105,6 +135,7 @@ int main(int argc, char **argv) {
     }
   }
 
+parsed:
   if (cat(filec, paths) != 0) {
     free(paths);
     exit(1);
@@ -115,7 +146,38 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+int print_stdin(char *buf) {
+  if (!fgets(buf, BUF_MAX_LEN, stdin)) {
+    perror("could not read from stdin");
+    free(buf);
+    return 1;
+  }
+
+  if (print_file(buf) != 0) {
+    free(buf);
+    return 1;
+  }
+
+  return 0;
+}
+
 int cat(int filec, char **paths) {
+  if (filec == 0 || !paths) {
+    char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
+    if (!buf) {
+      perror("could not allocate memory");
+      return 1;
+    }
+
+    if (print_stdin(buf) != 0) {
+      return 1;
+    }
+
+    free(buf);
+
+    return 0;
+  }
+
   for (int i = 0; i < filec; ++i) {
     // read from stdin
     if (strcmp(paths[i], "-") == 0) {
@@ -125,16 +187,10 @@ int cat(int filec, char **paths) {
         return 1;
       }
 
-      if (!fgets(buf, BUF_MAX_LEN, stdin)) {
-        perror("could not read from stdin");
-        free(buf);
+      if (print_stdin(buf) != 0) {
         return 1;
       }
 
-      if (print_file(buf) != 0) {
-        free(buf);
-        return 1;
-      }
       free(buf);
 
       continue;
@@ -234,7 +290,7 @@ int print_file(char *buf) {
       continue;
     }
     if (show_tabs && buf[i] == '\t') {
-      puts("^I");
+      printf("^I");
       continue;
     }
 
