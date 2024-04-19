@@ -4,7 +4,7 @@ CFLAGS := @$/compile_flags.txt
 
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -Wp,-U_FORTIFY_SOURCE
-CFLAGS += -iquote src
+CFLAGS += -iquote $/src
 
 LDFLAGS := -fwhole-program -flto
 LDFLAGS += -Wl,--gc-sections

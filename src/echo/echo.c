@@ -7,10 +7,7 @@
 #define VERSION "1.0.0"
 #define AUTHOR "Hoorad Farrokh (proh14)"
 
-#define print_version()                                                        \
-  do {                                                                         \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
-  } while (0)
+#include "version_info.h"
 
 int isoctal(int c) { return (c >= '0' && c <= '7'); }
 
