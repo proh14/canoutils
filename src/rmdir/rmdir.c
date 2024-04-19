@@ -10,10 +10,7 @@
 #define VERSION "1.0.0"
 #define AUTHOR "tim-tm"
 
-#define print_version()                                                        \
-  do {                                                                         \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
-  } while (0)
+#include "version_info.h"
 
 bool ignore_fail = false;
 bool parents = false;

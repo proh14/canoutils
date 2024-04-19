@@ -8,10 +8,7 @@
 #define VERSION "1.0.0"
 #define AUTHOR "Yohann Boniface (Sigmanificient)"
 
-#define print_version()                                                        \
-  do {                                                                         \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
-  } while (0)
+#include "version_info.h"
 
 static const char FLAGLIST[] = "alRdrt";
 static char DEFAULT_LOCATION[] = ".";
@@ -62,8 +59,10 @@ int main(int argc, char **argv) {
   int err = 0;
 
   for (int i = 0; argv[i] != NULL; i++)
-    if (!strcmp(argv[i], "--version"))
-      return printf(VERSION), EXIT_SUCCESS;
+    if (!strcmp(argv[i], "--version")) {
+      print_version();
+      return EXIT_SUCCESS;
+    }
   flags = compose_flaglist(argc, argv);
   db.entries = malloc(db.size * sizeof(*db.entries));
   if (db.entries == NULL)
