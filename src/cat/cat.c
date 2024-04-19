@@ -76,6 +76,8 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  // TODO: `cat [file] -[args]` works, but `cat -[args] [file]` doesn't
+
   // parse arguments
   // parsing arguments like `-nET` (= `-n -E -T`)
   for (int i = 1; i < argc; ++i) {
@@ -249,8 +251,9 @@ int print_file(char *buf) {
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
     // higher priority than the numbers
+    // NOTE: Not the prettiest code, but it works, so don't touch it
     if (squeeze_blank && buf[i] == '\n') {
-      // Skip over consecutive '\n' characters
+      // skip over consecutive '\n' characters
       if (i + 1 < len && buf[i + 1] == '\n') {
         // if the consecutive '\n' characters are over
         if (i + 2 < len && buf[i + 2] != '\n') {
