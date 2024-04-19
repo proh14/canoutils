@@ -26,7 +26,11 @@ size_t read_directory(dirbuff_t *db, DIR *dir, char flags)
     static char path[PATH_MAX];
     size_t i = 0;
 
-    for (struct dirent *dirent = readdir(dir); dirent; dirent = readdir(dir)) {
+    for (
+        struct dirent *dirent = readdir(dir);
+        dirent != NULL;
+        dirent = readdir(dir)
+    ) {
         if (dirent->d_name[0] == '.' && ~flags & F_ALL_FILES)
             continue;
         if (i == db->size) {
@@ -90,6 +94,8 @@ int list_dir(dirbuff_t *db, char flags)
     db->is_file = S_ISDIR(fi.st_mode) && ~flags & F_DIRECTORY;
     if (db->is_file) {
         dir = opendir(db->name);
+        if (dir == NULL)
+            return print_error(db->name), -1;
         count = read_directory(db, dir, flags);
         closedir(dir);
     } else {
