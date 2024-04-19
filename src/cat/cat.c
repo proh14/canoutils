@@ -232,7 +232,7 @@ int cat(int filec, char **paths) {
   return 0;
 }
 
-#define NUMBER_BEFORE 6 // number of spaces before numbers
+#define NUMBER_BEFORE 6 // number of spaces before line numbers
 
 int print_file(char *buf) {
   int lines = 1;
@@ -248,31 +248,36 @@ int print_file(char *buf) {
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
+    // higher priority than the numbers
+    if (squeeze_blank && buf[i] == '\n') {
+      // Skip over consecutive '\n' characters
+      if (i + 1 < len && buf[i + 1] == '\n') {
+        // if the consecutive '\n' characters are over
+        if (i + 2 < len && buf[i + 2] != '\n') {
+          if (number) {
+            printf("\n%*d  ", NUMBER_BEFORE, ++lines);
+          } else {
+            putchar('\n');
+          }
+        }
+        continue;
+      }
+    }
+
     if (number_nonblank && buf[i] == '\n' && buf[i + 1] != '\n' &&
         buf[i + 1] != '\0') {
-      putchar('\n');
-      printf("%*d  ", NUMBER_BEFORE, ++lines);
+      printf("\n%*d  ", NUMBER_BEFORE, ++lines);
       continue;
     }
     if (show_ends && buf[i] == '\n') {
       putchar('$');
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
-      putchar('\n');
-      printf("%6d  ", ++lines);
+      printf("\n%*d  ", NUMBER_BEFORE, ++lines);
       continue;
     }
     if (show_tabs && buf[i] == '\t') {
       printf("^I");
-      continue;
-    }
-    if (squeeze_blank && buf[i] == '\n') {
-      // Skip over consecutive '\n' characters
-      while (i + 1 < len && buf[i + 1] == '\n') {
-        i++;
-      }
-      putchar('\n');
-      putchar('\n');
       continue;
     }
 
