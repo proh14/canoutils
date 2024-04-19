@@ -186,7 +186,10 @@ int main(int argc, char **argv) {
     print_version();
     return 0;
   } else if (strcmp(flag, "--help") == 0) {
-    system("man rm");
+    if (system("man rm")) {
+      fprintf(stderr, "error: please install man to see help page\n");
+      exit(1);
+    };
     return 0;
   } else if (strcmp(flag, "-v") == 0) {
     verbose = true;
