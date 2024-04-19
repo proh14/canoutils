@@ -5,7 +5,7 @@
 
 char *strdup(char const *s)
 {
-    int len = strlen(s);
+    size_t len = strlen(s);
     char *dupped = malloc(len + 1);
 
     strcpy(dupped, s);

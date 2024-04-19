@@ -2,8 +2,8 @@
 
 #include "ls.h"
 
-static const char *FLAGLIST = "alRdrt";
-static char DEFAULT_LOCATION[2] = ".";
+static const char FLAGLIST[] = "alRdrt";
+static char DEFAULT_LOCATION[] = ".";
 
 static
 char compose_flaglist(int argc, char **argv)
@@ -20,7 +20,7 @@ char compose_flaglist(int argc, char **argv)
 }
 
 static
-int count_targets(int argc, char **argv)
+size_t count_targets(int argc, char **argv)
 {
     int count = 0;
 
@@ -31,10 +31,10 @@ int count_targets(int argc, char **argv)
 }
 
 static
-int list_dirs(dirbuff_t *db, int argc, char **argv, char flags)
+bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags)
 {
     int err = 0;
-    int count = count_targets(argc, argv);
+    size_t count = count_targets(argc, argv);
 
     if (count == 0) {
         db->name = DEFAULT_LOCATION;
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     if (flags & F_DIRECTORY)
         flags &= ~F_RECURSIVE;
-    err |= list_dirs(&db, argc, argv, flags);
+    err |= !list_dirs(&db, argc, argv, flags);
     free(db.entries);
     return err ? EXIT_SUCCESS : EXIT_FAILURE;
 }

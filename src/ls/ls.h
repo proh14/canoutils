@@ -1,6 +1,7 @@
 #ifndef MY_LS_H
     #define MY_LS_H
     
+    #include <stdbool.h>
     #include <stddef.h>
 
     #define ZERO_OR(expr, default) ((!!(expr)) * default)
@@ -33,28 +34,25 @@ typedef struct {
 typedef struct {
     char *name;
     entry_t *entries;
-    int size;
-    int is_file;
+    size_t size;
+    bool is_file;
 } dirbuff_t;
 
-inline
+inline __attribute__((const))
 int stridx(const char *str, char c)
 {
     for (const char *p = str; *p != '\0'; p++)
         if (*p == c)
-            return p - str;
+            return (int)(p - str);
     return -1;
 }
 
 char *strdup(char const *s);
 
 int list_dir(dirbuff_t *db, char flags);
-int recurse(dirbuff_t *db, int count, char flags);
+size_t recurse(dirbuff_t *db, size_t count, char flags);
 
-void print_entries(entry_t *entry, int count, char flags);
+void print_entries(entry_t *entry, size_t count, char flags);
 char *path_concat(char *dest, char *basepath, char *suffix);
-
-void sort_entries(entry_t *entries, int count);
-void sort_entries_by_time(entry_t *entries, int count);
 
 #endif

@@ -5,7 +5,7 @@
 
 char *path_concat(char *dest, char *basepath, char *suffix)
 {
-    int written = 0;
+    unsigned long written = 0;
 
     strcpy(dest, basepath);
     written = strlen(basepath);
@@ -19,14 +19,12 @@ char *path_concat(char *dest, char *basepath, char *suffix)
     return dest;
 }
 
-static
-int find_directories(char **dirs, dirbuff_t *db, int count)
+static __attribute__((nonnull))
+size_t find_directories(char **dirs, dirbuff_t *db, size_t count)
 {
-    int found = 0;
+    size_t found = 0;
 
-    if (dirs == NULL)
-        return -1;
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         if (!strcmp(db->entries[i].name, ".")
             || !strcmp(db->entries[i].name, ".."))
             continue;
@@ -38,21 +36,19 @@ int find_directories(char **dirs, dirbuff_t *db, int count)
     return found;
 }
 
-int recurse(dirbuff_t *db, int count, char flags)
+size_t recurse(dirbuff_t *db, size_t count, char flags)
 {
     static char path[PATH_MAX];
-    int dirsize = strlen(db->name);
+    size_t dirsize = strlen(db->name);
     char **dirs = malloc(count * sizeof(char *));
-    int j = find_directories(dirs, db, count);
+    size_t j = find_directories(dirs, db, count);
 
-    if (j == -1)
-        return -1;
-    for (int i = 0; i < j; i++) {
+    for (size_t i = 0; i < j; i++) {
         db->name = path_concat(path, db->name, dirs[i]);
         list_dir(db, flags);
         db->name[dirsize] = '\0';
     }
-    for (int i = 0; i < j; i++)
+    for (size_t i = 0; i < j; i++)
         free(dirs[i]);
     free(dirs);
     return 0;

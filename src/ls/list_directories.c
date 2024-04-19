@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -21,14 +20,12 @@ void get_file_info(const char *path, entry_t *entry)
     entry->group = getgrgid(entry->stat.st_gid);
 }
 
-static
-int read_directory(dirbuff_t *db, DIR *dir, char flags)
+static __attribute__((nonnull))
+size_t read_directory(dirbuff_t *db, DIR *dir, char flags)
 {
     static char path[PATH_MAX];
-    int i = 0;
+    size_t i = 0;
 
-    if (dir == NULL)
-        return -1;
     for (struct dirent *dirent = readdir(dir); dirent; dirent = readdir(dir)) {
         if (dirent->d_name[0] == '.' && ~flags & F_ALL_FILES)
             continue;
@@ -66,38 +63,43 @@ void print_error(char *dirname)
 }
 
 static
-int read_arg(dirbuff_t *db, char flags)
+int compare_names(entry_t const *leftp, entry_t const *rightp)
+{
+    return strcoll(leftp->name, rightp->name);
+}
+
+static
+int compare_times(entry_t const *leftp, entry_t const *rightp)
+{
+    return (int)(
+        rightp->stat.st_mtim.tv_sec
+        - leftp->stat.st_mtim.tv_sec
+    );
+}
+
+int list_dir(dirbuff_t *db, char flags)
 {
     struct stat fi;
-    int count = 1;
+    size_t count = 1;
     DIR *dir;
 
-    db->is_file = 0;
-    if (stat(db->name, &fi) < 0) {
-        print_error(db->name);
-        return -1;
-    }
-    if (S_ISDIR(fi.st_mode) && ~flags & F_DIRECTORY) {
+    if (stat(db->name, &fi) < 0)
+        return print_error(db->name), -1;
+    db->is_file = S_ISDIR(fi.st_mode) && ~flags & F_DIRECTORY;
+    if (db->is_file) {
         dir = opendir(db->name);
         count = read_directory(db, dir, flags);
         closedir(dir);
     } else {
         strcpy(db->entries[0].name, db->name);
         get_file_info(db->name, &db->entries[0]);
-        db->is_file = 1;
     }
-    return count;
-}
 
-int list_dir(dirbuff_t *db, char flags)
-{
-    int count = read_arg(db, flags);
-
-    if (count == -1)
-        return -1;
-    sort_entries(db->entries, count);
+    qsort(db->entries, count,
+        sizeof *db->entries, (__compar_fn_t)&compare_names);
     if (flags & F_SORT_TIME)
-        sort_entries_by_time(db->entries, count);
+        qsort(db->entries, count,
+            sizeof *db->entries, (__compar_fn_t)&compare_times);
     if (flags & (F_SHOW_DIRS | F_RECURSIVE) && !db->is_file)
         printf("%s:\n", db->name);
     print_entries(db->entries, count, flags);
