@@ -24,7 +24,7 @@
       "x86_64-linux"
     ] (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+    in rec {
       formatter = pkgs.alejandra;
 
       checks = let
@@ -41,7 +41,10 @@
         else {};
 
       devShells.default = pkgs.mkShell {
-        # inputsFrom = pkgs.lib.attrsets.attrValues packages;
+        inherit (checks.pre-commit-check) shellHook;
+
+        hardeningDisable = ["fortify"];
+        inputsFrom = pkgs.lib.attrsets.attrValues packages;
         packages = with pkgs; [
           bear
           python3Packages.compiledb
