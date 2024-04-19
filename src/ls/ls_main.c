@@ -1,6 +1,17 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ls.h"
+
+#define NAME "ls (canoutils)"
+#define VERSION "1.0.0"
+#define AUTHOR "Yohann Boniface (Sigmanificient)"
+
+#define print_version()                                                        \
+  do {                                                                         \
+    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
+  } while (0)
 
 static const char FLAGLIST[] = "alRdrt";
 static char DEFAULT_LOCATION[] = ".";
@@ -47,9 +58,13 @@ static bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags) {
 
 int main(int argc, char **argv) {
   dirbuff_t db = {.size = MIN_ALLOCATED_ENTRY};
-  char flags = compose_flaglist(argc, argv);
+  char flags;
   int err = 0;
 
+  for (int i = 0; argv[i] != NULL; i++)
+    if (!strcmp(argv[i], "--version"))
+      return printf(VERSION), EXIT_SUCCESS;
+  flags = compose_flaglist(argc, argv);
   db.entries = malloc(db.size * sizeof(*db.entries));
   if (db.entries == NULL)
     return EXIT_FAILURE;
