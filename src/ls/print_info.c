@@ -15,18 +15,19 @@
 static
 void get_file_right(char bits[], entry_t *entry)
 {
+    char *bitsp = bits;
     mode_t mode = entry->stat.st_mode;
     static const char *s = "-rwx";
 
-    bits[0] = s[(unsigned char)ZERO_OR(mode & S_IRUSR, 1)];
-    bits[1] = s[(unsigned char)ZERO_OR(mode & S_IWUSR, 2)];
-    bits[2] = s[(unsigned char)ZERO_OR(mode & S_IXUSR, 3)];
-    bits[3] = s[(unsigned char)ZERO_OR(mode & S_IRGRP, 1)];
-    bits[4] = s[(unsigned char)ZERO_OR(mode & S_IWGRP, 2)];
-    bits[5] = s[(unsigned char)ZERO_OR(mode & S_IXGRP, 3)];
-    bits[6] = s[(unsigned char)ZERO_OR(mode & S_IROTH, 1)];
-    bits[7] = s[(unsigned char)ZERO_OR(mode & S_IWOTH, 2)];
-    bits[8] = s[(unsigned char)ZERO_OR(mode & S_IXOTH, 3)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IRUSR, 1)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IWUSR, 2)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IXUSR, 3)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IRGRP, 1)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IWGRP, 2)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IXGRP, 3)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IROTH, 1)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IWOTH, 2)];
+    *bitsp++ = s[(unsigned char)ZERO_OR(mode & S_IXOTH, 3)];
     if (mode & S_ISUID)
         bits[1] = (mode & S_IXUSR) ? 's' : 'S';
     if (mode & S_ISGID)

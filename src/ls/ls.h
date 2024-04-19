@@ -14,11 +14,6 @@
     #define MIN_ALLOCATED_ENTRY (1024)
 
 enum {
-    EXIT_OK = 0,
-    EXIT_KO = 84
-};
-
-enum {
     F_ALL_FILES = 1 << 0,
     F_LONG_FORM = 1 << 1,
     F_RECURSIVE = 1 << 2,
