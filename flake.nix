@@ -25,6 +25,7 @@
           bear
           python3Packages.compiledb
           gcovr
+          clang-tools
         ];
       };
 
