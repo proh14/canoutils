@@ -59,6 +59,15 @@ int rm_dir(char *dirname) {
   return 0;
 }
 
+void strip_off_slash(char *str) {
+  if (str == NULL) return;
+
+  size_t str_len = strlen(str);
+  if (str[str_len-1] == '/') {
+    str[str_len-1] = '\0';
+  }
+}
+
 int main(int argc, char **argv) {
   if (argc <= 1) {
     fprintf(stderr, "Not enough arguments.\nSee rmdir --help for more information.\n");
@@ -88,11 +97,26 @@ int main(int argc, char **argv) {
     }
   }
 
+  char *str = argv[argc-1];
   if (parents) {
-    // TODO: Implement -p|--parents flag
+    strip_off_slash(str);
+
+    long i = -1;
+    while (i != 0) {
+      strip_off_slash(str);
+      char *strip = strrchr(str, '/');
+      if (strip == NULL) {
+        i = 0;
+      } else {
+        i = strip-str+1;
+      }
+
+      if (rm_dir(str) != 0) return 1;
+      str[i] = '\0';
+    }
     return 0;
   } else {
-    return rm_dir(argv[argc-1]);
+    return rm_dir(str);
   }
 }
 
