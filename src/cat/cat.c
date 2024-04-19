@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,22 +25,25 @@
     printf("see `cat --help`\n");                                              \
   } while (0)
 
-#define BUF_MAX_LEN 4096
-#define PATH_LEN 256
-#define ARGS_MAX 16 // number of the max arguments
-#define ARGS_LEN 32
+#define BUF_MAX_LEN 4096 // max length of a buffer in bytes
+#define PATH_LEN 256     // max length of a path in bytes
+#define ARGS_MAX 16      // number of the max arguments
+#define ARGS_LEN 32      // max length of the arguments in bytes
 
-bool number_nonblank = false; // number nonblank
-bool show_ends = false;       // show ends
-bool number = false;          // number
-bool show_tabs = false;       // show tabs
+bool number_nonblank = false; // number nonempty output lines, overrides -n
+bool show_ends = false;       // display $ at end of each line
+bool number = false;          // number all output lines
+bool squeeze_blank = false;   // suppress repeated empty output lines
+bool show_tabs = false;       // display TAB characters as ^I
 
 int cat(int filec, char **paths);
 int print_file(char *buf);
+int print_stdin(void);
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    if (cat(0, NULL) != 0) {
+    // print stdin
+    if (print_stdin() != 0) {
       exit(1);
     }
     return 0;
@@ -92,6 +94,9 @@ int main(int argc, char **argv) {
           number = true;
           number_nonblank = false;
           continue;
+        case 's':
+          squeeze_blank = true;
+          continue;
         case 'T':
           show_tabs = true;
           continue;
@@ -101,7 +106,7 @@ int main(int argc, char **argv) {
           return 1;
         }
       }
-      goto parsed;
+      goto parsing_done;
     }
 
     // parsing individual arguments
@@ -120,10 +125,15 @@ int main(int argc, char **argv) {
       number_nonblank = false;
       continue;
     }
+    if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--squeeze-blank") == 0) {
+      squeeze_blank = true;
+      continue;
+    }
     if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
       show_tabs = true;
       continue;
     } else {
+      // check if the file is accessible
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
         fprintf(stderr, "file `%s` not found\n", argv[i]);
         free(paths);
@@ -135,28 +145,13 @@ int main(int argc, char **argv) {
     }
   }
 
-parsed:
+parsing_done:
   if (cat(filec, paths) != 0) {
     free(paths);
     exit(1);
   }
 
   free(paths);
-
-  return 0;
-}
-
-int print_stdin(char *buf) {
-  if (!fgets(buf, BUF_MAX_LEN, stdin)) {
-    perror("could not read from stdin");
-    free(buf);
-    return 1;
-  }
-
-  if (print_file(buf) != 0) {
-    free(buf);
-    return 1;
-  }
 
   return 0;
 }
@@ -169,7 +164,7 @@ int cat(int filec, char **paths) {
       return 1;
     }
 
-    if (print_stdin(buf) != 0) {
+    if (print_stdin() != 0) {
       return 1;
     }
 
@@ -187,7 +182,7 @@ int cat(int filec, char **paths) {
         return 1;
       }
 
-      if (print_stdin(buf) != 0) {
+      if (print_stdin() != 0) {
         return 1;
       }
 
@@ -237,60 +232,47 @@ int cat(int filec, char **paths) {
   return 0;
 }
 
-#define NUMBER_BEFORE 6
-
-#define PRINT_N_SPACES(n)                                                      \
-  do {                                                                         \
-    for (int i = 0; i < n; ++i) {                                              \
-      putchar(' ');                                                            \
-    }                                                                          \
-  } while (0)
+#define NUMBER_BEFORE 6 // number of spaces before numbers
 
 int print_file(char *buf) {
   int lines = 1;
-  char line_str[11];
   if (number) {
-    printf("     %d  ", lines); // print number before the first line
+    // print number before the first line
+    printf("%*d  ", NUMBER_BEFORE, lines);
   }
   if (number_nonblank) {
     if (buf[0] != '\n' && buf[1] != '\0') {
-      printf("     %d  ", lines); // print number before the first line
+      // print number before the first line
+      printf("%*d  ", NUMBER_BEFORE, lines);
     }
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
     if (number_nonblank && buf[i] == '\n' && buf[i + 1] != '\n' &&
         buf[i + 1] != '\0') {
-      snprintf(line_str, sizeof(line_str), "%d", lines);
-      int len = strlen(line_str);
-      // check if the line number is a power of 10
-      // one off because the whole thing writes numbers one off
-      if (log10(lines + 1) == (int)log10(lines + 1)) {
-        len++;
-      }
       putchar('\n');
-      PRINT_N_SPACES(NUMBER_BEFORE - len);
-      printf("%i  ", ++lines);
+      printf("%*d  ", NUMBER_BEFORE, ++lines);
       continue;
     }
     if (show_ends && buf[i] == '\n') {
       putchar('$');
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
-      snprintf(line_str, sizeof(line_str), "%d", lines);
-      int len = strlen(line_str);
-      // check if the line number is a power of 10
-      // one off because the whole thing writes numbers one off
-      if (log10(lines + 1) == (int)log10(lines + 1)) {
-        len++;
-      }
       putchar('\n');
-      PRINT_N_SPACES(NUMBER_BEFORE - len);
-      printf("%i  ", ++lines);
+      printf("%6d  ", ++lines);
       continue;
     }
     if (show_tabs && buf[i] == '\t') {
       printf("^I");
+      continue;
+    }
+    if (squeeze_blank && buf[i] == '\n') {
+      // Skip over consecutive '\n' characters
+      while (i + 1 < len && buf[i + 1] == '\n') {
+        i++;
+      }
+      putchar('\n');
+      putchar('\n');
       continue;
     }
 
@@ -298,4 +280,16 @@ int print_file(char *buf) {
   }
 
   return 0;
+}
+
+int print_stdin(void) {
+  char buf[BUF_MAX_LEN];
+  while (fgets(buf, BUF_MAX_LEN, stdin)) {
+    if (print_file(buf) != 0) {
+      return 1;
+    }
+  }
+  perror("could not read from stdin");
+
+  __builtin_unreachable();
 }
