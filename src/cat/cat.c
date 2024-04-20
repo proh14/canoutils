@@ -45,9 +45,13 @@ typedef enum {
   ShowNonprinting = (1 << 5), // use ^ and M- notation, except for LFD and TAB
 } Flag;
 
+static const char FLAGLIST[] = "bEnsTv";
+
 int cat(int filec, char **paths, unsigned int flags);
 int print_buffer(char *buf, unsigned int flags);
 int print_stdin(unsigned int flags);
+
+inline __attribute__((const)) int stridx(const char *str, char c);
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -81,62 +85,25 @@ int main(int argc, char **argv) {
       for (int j = 1; j < len; ++j) {
         switch (argv[i][j]) {
         case 'A':
-          flags |= ShowNonprinting;
-          flags |= ShowEnds;
-          flags |= ShowTabs;
-          continue;
+          flags |= ShowNonprinting | ShowEnds | ShowTabs;
+          break;
         case 'b':
           flags &= ~Number;
           flags |= NumberNonblank;
-          continue;
+          break;
         case 'e':
-          flags |= ShowNonprinting;
-          flags |= ShowEnds;
-          continue;
-        case 'E':
-          flags |= ShowEnds;
-          continue;
+          flags |= ShowNonprinting | ShowEnds;
+          break;
         case 'n':
           flags &= ~NumberNonblank;
           flags |= Number;
-          continue;
-        case 's':
-          flags |= SqueezeBlank;
-          continue;
+          break;
         case 't':
-          flags |= ShowNonprinting;
-          flags |= ShowTabs;
-          continue;
-        case 'T':
-          flags |= ShowTabs;
-          continue;
-        case 'v':
-          flags |= ShowNonprinting;
-          continue;
-        case '-':
-          if (!strcmp(argv[i], "--show-all")) {
-            flags |= ShowNonprinting;
-            flags |= ShowEnds;
-            flags |= ShowTabs;
-          } else if (!strcmp(argv[i], "--number-nonblank")) {
-            flags |= NumberNonblank;
-            flags &= ~Number;
-          } else if (!strcmp(argv[i], "--show-ends")) {
-            flags |= ShowEnds;
-          } else if (!strcmp(argv[i], "--number")) {
-            flags |= Number;
-            flags &= ~NumberNonblank;
-          } else if (!strcmp(argv[i], "--squeeze-blank")) {
-            flags |= SqueezeBlank;
-          } else if (!strcmp(argv[i], "--show-tabs")) {
-            flags |= ShowTabs;
-          } else if (!strcmp(argv[i], "--show-nonprinting")) {
-            flags |= ShowNonprinting;
-          }
+          flags |= ShowNonprinting | ShowTabs;
           break;
         default:
-          fprintf(stderr, "unknown argument `%s`", argv[i]);
-          return EXIT_FAILURE;
+          flags |= 1 << (stridx(FLAGLIST, argv[i][j]));
+          break;
         }
       }
     } else {
@@ -279,4 +246,11 @@ int print_stdin(unsigned int flags) {
   }
 
   return 0;
+}
+
+inline __attribute__((const)) int stridx(const char *str, char c) {
+  for (const char *p = str; *p != '\0'; p++)
+    if (*p == c)
+      return (int)(p - str);
+  return -1;
 }
