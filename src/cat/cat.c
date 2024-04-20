@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
           }
           break;
         default:
-          fprintf(stderr, "unknown argument `-%c`", argv[i][j]);
+          fprintf(stderr, "unknown argument `%s`", argv[i]);
           free(paths);
           return 1;
         }
@@ -262,7 +262,7 @@ int print_file(char *buf) {
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
     // higher priority
-    // NOTE: not the prettiest code, but it works, so don't touch it
+    // NOTE: not the prettiest code, but it works
     if (squeeze_blank && buf[i] == '\n') {
       // skip over consecutive '\n' characters
       if (i + 1 < len && buf[i + 1] == '\n') {
