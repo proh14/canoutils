@@ -11,7 +11,9 @@
 
 #include "version_info.h"
 
-static void tree_free(ast *root) {
+void tree_free(ast *root) {
+  if (root == NULL)
+    return;
   if (root->any.typ == AST_UNARY)
     tree_free(root->unary.next);
   if (root->any.typ == AST_BINOP) {
@@ -54,10 +56,8 @@ static bool expr_run(char **argv) {
   parser p = {.tok = lex_get_next_token(&lex), .lx = &lex};
   ast *root = parser_expr(&p);
 
-  if (root == NULL) {
-    fprintf(stderr, "Failed to create the AST");
-    return EXIT_FAILURE;
-  }
+  if (root == NULL)
+    return free(lex.tokens), EXIT_FAILURE;
   traverse_ast(root, 0);
   printf("%d\n", visit_generic(root));
   tree_free(root);

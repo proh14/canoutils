@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "expr.h"
@@ -15,7 +16,7 @@ ast *parser_factor(parser *p) {
   token *tmp;
 
   if (p->tok == NULL)
-    return NULL;
+    return tree_free(node), NULL;
   if (p->tok->typ == TOK_INT) {
     tmp = p->tok;
     expr_parser_eat(p, TOK_INT);
@@ -24,7 +25,8 @@ ast *parser_factor(parser *p) {
     node->num.typ = AST_NUM;
     return node;
   }
-  return NULL;
+  fprintf(stderr, "syntax error\n");
+  return tree_free(node), NULL;
 }
 
 ast *parser_term(parser *p) {
@@ -32,8 +34,8 @@ ast *parser_term(parser *p) {
   ast *prev = node;
   token *tmp;
 
-  if (p->tok == NULL)
-    return NULL;
+  if (node == NULL || p->tok == NULL)
+    return tree_free(node), NULL;
   while (p->tok->typ == TOK_MUL || p->tok->typ == TOK_DIV) {
     tmp = p->tok;
     if (p->tok->typ == TOK_MUL)
@@ -46,8 +48,8 @@ ast *parser_term(parser *p) {
     node->binop.tok = tmp;
     node->binop.next = parser_factor(p);
     node->binop.typ = AST_BINOP;
-    if (p->tok == NULL)
-      return NULL;
+    if (node->binop.next == NULL || p->tok == NULL)
+      return tree_free(node), NULL;
   }
   return node;
 }
@@ -57,8 +59,8 @@ ast *parser_expr(parser *p) {
   ast *prev = node;
   token *tmp;
 
-  if (p->tok == NULL)
-    return NULL;
+  if (node == NULL || p->tok == NULL)
+    return tree_free(node), NULL;
   while (p->tok->typ == TOK_ADD || p->tok->typ == TOK_SUB) {
     tmp = p->tok;
     if (p->tok->typ == TOK_ADD)
@@ -71,8 +73,8 @@ ast *parser_expr(parser *p) {
     node->binop.tok = tmp;
     node->binop.next = parser_term(p);
     node->binop.typ = AST_BINOP;
-    if (p->tok == NULL)
-      return NULL;
+    if (node->binop.next == NULL || p->tok == NULL)
+      return tree_free(node), NULL;
   }
   return node;
 }

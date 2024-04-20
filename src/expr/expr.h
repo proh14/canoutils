@@ -75,5 +75,6 @@ typedef union ast_ {
 token *lex_get_next_token(lexer *lx);
 ast *parser_expr(parser *p);
 int visit_generic(ast *node);
+void tree_free(ast *root);
 
 #endif
