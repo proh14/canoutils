@@ -135,15 +135,22 @@ int main(int argc, char **argv) {
             return EXIT_SUCCESS;
           }
           break;
-        default:
-          flags |= 1 << (stridx(FLAGLIST, argv[i][j]));
+        default: {
+          int flag = stridx(FLAGLIST, argv[i][j]);
+          if (flag == -1) {
+            fprintf(stderr, "cat: invalid option `-%c`\n", argv[i][j]);
+            fprintf(stderr, "Try 'cat --help' for more information.\n");
+            return EXIT_FAILURE;
+          }
+          flags |= 1 << (flag);
           break;
+        }
         }
       }
     } else {
       // check if the file is accessible
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
-        fprintf(stderr, "file `%s` not found\n", argv[i]);
+        fprintf(stderr, "cat: file `%s` not found\n", argv[i]);
         return EXIT_FAILURE;
       }
 
@@ -187,7 +194,7 @@ int cat(int filec, char **paths, unsigned int flags) {
     // read the file into the buffer
     size_t files_read = fread(buf, sizeof(char), file_size, infile);
     if (files_read != (size_t)file_size) {
-      fprintf(stderr, "could not read file\n");
+      fprintf(stderr, "cat: could not read file\n");
       fclose(infile);
       return 1;
     }
