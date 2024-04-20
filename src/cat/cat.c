@@ -46,7 +46,7 @@ typedef enum {
 } Flag;
 
 int cat(int filec, char **paths, unsigned int flags);
-int print_file(char *buf, unsigned int flags);
+int print_buffer(char *buf, unsigned int flags);
 int print_stdin(unsigned int flags);
 
 int main(int argc, char **argv) {
@@ -70,18 +70,12 @@ int main(int argc, char **argv) {
   }
 
   int filec = 0; // file count
-  char **paths = (char **)malloc(sizeof(char) * PATH_MAX * ARGS_MAX);
+  char *paths[ARGS_MAX];
 
-  if (!paths) {
-    perror("could not allocate memory");
-    return EXIT_FAILURE;
-  }
-
-  unsigned int flags;
+  unsigned int flags = 0;
 
   // parse arguments
   for (int i = 1; i < argc; ++i) {
-    flags = 0;
     int len = strlen(argv[i]);
     if (len > 1 && argv[i][0] == '-') {
       for (int j = 1; j < len; ++j) {
@@ -142,7 +136,6 @@ int main(int argc, char **argv) {
           break;
         default:
           fprintf(stderr, "unknown argument `%s`", argv[i]);
-          free(paths);
           return EXIT_FAILURE;
         }
       }
@@ -150,7 +143,6 @@ int main(int argc, char **argv) {
       // check if the file is accessible
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
         fprintf(stderr, "file `%s` not found\n", argv[i]);
-        free(paths);
         return EXIT_FAILURE;
       }
 
@@ -158,14 +150,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (cat(filec, paths, flags) != 0) {
-    free(paths);
-    return EXIT_FAILURE;
-  }
-
-  free(paths);
-
-  return EXIT_SUCCESS;
+  return (cat(filec, paths, flags) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int cat(int filec, char **paths, unsigned int flags) {
@@ -177,17 +162,9 @@ int cat(int filec, char **paths, unsigned int flags) {
   for (int i = 0; i < filec; ++i) {
     // print stdin
     if (!strcmp(paths[i], "-")) {
-      char *buf = (char *)malloc(sizeof(char) * BUF_MAX);
-      if (!buf) {
-        perror("could not allocate memory");
-        return 1;
-      }
-
       if (print_stdin(flags) != 0) {
         return 1;
       }
-
-      free(buf);
 
       continue;
     }
@@ -204,49 +181,38 @@ int cat(int filec, char **paths, unsigned int flags) {
     long file_size = ftell(infile);
     fseek(infile, 0, SEEK_SET);
 
-    char *buf = (char *)malloc(sizeof(char) * (file_size + 1));
-    if (!buf) {
-      perror("could not allocate memory");
-      fclose(infile);
-      return 1;
-    }
+    char buf[file_size + 1];
 
     // read the file into the buffer
     size_t files_read = fread(buf, sizeof(char), file_size, infile);
     if (files_read != (size_t)file_size) {
       fprintf(stderr, "could not read file\n");
       fclose(infile);
-      free(buf);
       return 1;
     }
     buf[file_size] = '\0'; // make sure the string is null terminated
 
     fclose(infile);
 
-    if (print_file(buf, flags) != 0) {
-      free(buf);
+    if (print_buffer(buf, flags) != 0) {
       return 1;
     }
-
-    free(buf);
   }
   return 0;
 }
 
-#define NUMBER_BEFORE 6 // number of spaces before line numbers
+#define BEFORE_NUMBER 6 // number of spaces before line numbers
 
-int print_file(char *buf, unsigned int flags) {
+int print_buffer(char *buf, unsigned int flags) {
   int lines = 1;
-  /* if (number) { */
   if ((flags & Number)) {
     // print number before the first line
-    printf("%*d  ", NUMBER_BEFORE, lines);
+    printf("%*d  ", BEFORE_NUMBER, lines);
   }
-  /* if (number_nonblank) { */
   if ((flags & NumberNonblank)) {
     if (buf[0] != '\n' && buf[1] != '\0') {
       // print number before the first line
-      printf("%*d  ", NUMBER_BEFORE, lines);
+      printf("%*d  ", BEFORE_NUMBER, lines);
     }
   }
   int len = strlen(buf);
@@ -259,7 +225,7 @@ int print_file(char *buf, unsigned int flags) {
         // if the consecutive '\n' characters are over
         if (i + 2 < len && buf[i + 2] != '\n') {
           if ((flags & Number)) {
-            printf("\n%*d  ", NUMBER_BEFORE, ++lines);
+            printf("\n%*d  ", BEFORE_NUMBER, ++lines);
           } else {
             putchar('\n');
           }
@@ -270,14 +236,14 @@ int print_file(char *buf, unsigned int flags) {
 
     if ((flags & NumberNonblank) && buf[i] == '\n' && buf[i + 1] != '\n' &&
         buf[i + 1] != '\0') {
-      printf("\n%*d  ", NUMBER_BEFORE, ++lines);
+      printf("\n%*d  ", BEFORE_NUMBER, ++lines);
       continue;
     }
     if ((flags & ShowEnds) && buf[i] == '\n') {
       putchar('$');
     }
     if ((flags & Number) && buf[i] == '\n' && buf[i + 1] != '\0') {
-      printf("\n%*d  ", NUMBER_BEFORE, ++lines);
+      printf("\n%*d  ", BEFORE_NUMBER, ++lines);
       continue;
     }
     if ((flags & ShowTabs) && buf[i] == '\t') {
@@ -307,7 +273,7 @@ int print_file(char *buf, unsigned int flags) {
 int print_stdin(unsigned int flags) {
   char buf[BUF_MAX];
   while (fgets(buf, BUF_MAX, stdin)) {
-    if (print_file(buf, flags) != 0) {
+    if (print_buffer(buf, flags) != 0) {
       return 1;
     }
   }
