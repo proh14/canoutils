@@ -59,6 +59,7 @@ static bool expr_run(char **argv) {
     return EXIT_FAILURE;
   }
   traverse_ast(root, 0);
+  printf("%d\n", visit_generic(root));
   tree_free(root);
   free(lex.tokens);
   return true;
