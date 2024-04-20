@@ -84,9 +84,18 @@ int main(int argc, char **argv) {
     if (len > 1 && argv[i][0] == '-') {
       for (int j = 1; j < len; ++j) {
         switch (argv[i][j]) {
+        case 'A':
+          show_nonprinting = true;
+          show_ends = true;
+          show_tabs = true;
+          continue;
         case 'b':
           number_nonblank = true;
           number = false;
+          continue;
+        case 'e':
+          show_nonprinting = true;
+          show_ends = true;
           continue;
         case 'E':
           show_ends = true;
@@ -98,6 +107,10 @@ int main(int argc, char **argv) {
         case 's':
           squeeze_blank = true;
           continue;
+        case 't':
+          show_nonprinting = true;
+          show_tabs = true;
+          continue;
         case 'T':
           show_tabs = true;
           continue;
@@ -105,7 +118,11 @@ int main(int argc, char **argv) {
           show_nonprinting = true;
           continue;
         case '-':
-          if (strcmp(argv[i], "--number-nonblank") == 0) {
+          if (strcmp(argv[i], "--show-all") == 0) {
+            show_nonprinting = true;
+            show_ends = true;
+            show_tabs = true;
+          } else if (strcmp(argv[i], "--number-nonblank") == 0) {
             number_nonblank = true;
             number = false;
           } else if (strcmp(argv[i], "--show-ends") == 0) {
