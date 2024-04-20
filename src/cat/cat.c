@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,11 +31,12 @@
 #define ARGS_MAX 16      // number of the max arguments
 #define ARGS_LEN 32      // max length of the arguments in bytes
 
-bool number_nonblank = false; // number nonempty output lines, overrides -n
-bool show_ends = false;       // display $ at end of each line
-bool number = false;          // number all output lines
-bool squeeze_blank = false;   // suppress repeated empty output lines
-bool show_tabs = false;       // display TAB characters as ^I
+bool number_nonblank = false;  // number nonempty output lines, overrides -n
+bool show_ends = false;        // display $ at end of each line
+bool number = false;           // number all output lines
+bool squeeze_blank = false;    // suppress repeated empty output lines
+bool show_tabs = false;        // display TAB characters as ^I
+bool show_nonprinting = false; // use ^ and M- notation, except for LFD and TAB
 
 int cat(int filec, char **paths);
 int print_file(char *buf);
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
   // parsing arguments like `-nET` (= `-n -E -T`)
   for (int i = 1; i < argc; ++i) {
     int len = strlen(argv[i]);
-    if (len > 2 && argv[i][0] == '-' && argv[i][1] != '-') {
+    if (len > 1 && argv[i][0] == '-') {
       for (int j = 1; j < len; ++j) {
         switch (argv[i][j]) {
         case 'b':
@@ -101,6 +103,11 @@ int main(int argc, char **argv) {
           continue;
         case 'T':
           show_tabs = true;
+          show_nonprinting = false;
+          continue;
+        case 'v':
+          show_nonprinting = true;
+          show_tabs = false;
           continue;
         case '-':
           // TODO:
@@ -124,6 +131,12 @@ int main(int argc, char **argv) {
           }
           if (strcmp(argv[i], "--show-tabs") == 0) {
             show_tabs = true;
+            show_nonprinting = false;
+            continue;
+          }
+          if (strcmp(argv[i], "--show-nonprinting") == 0) {
+            show_nonprinting = true;
+            show_tabs = false;
             continue;
           }
           break;
@@ -133,20 +146,16 @@ int main(int argc, char **argv) {
           return 1;
         }
       }
-      // if the argument is parsed, continue
-      continue;
-    }
-    // otherwise parse the file path
+    } else {
+      // check if the file is accessible
+      if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
+        fprintf(stderr, "file `%s` not found\n", argv[i]);
+        free(paths);
+        return 1;
+      }
 
-    // check if the file is accessible
-    if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
-      fprintf(stderr, "file `%s` not found\n", argv[i]);
-      free(paths);
-      return 1;
+      paths[filec++] = argv[i];
     }
-
-    paths[filec++] = argv[i];
-    continue;
   }
 
   if (cat(filec, paths) != 0) {
@@ -275,7 +284,8 @@ int print_file(char *buf) {
       continue;
     }
     if (show_ends && buf[i] == '\n') {
-      putchar('$');
+      printf("$\n");
+      continue;
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
       printf("\n%*d  ", NUMBER_BEFORE, ++lines);
@@ -283,6 +293,18 @@ int print_file(char *buf) {
     }
     if (show_tabs && buf[i] == '\t') {
       printf("^I");
+      continue;
+    }
+    if (show_nonprinting && !isprint(buf[i])) {
+      if (buf[i] & 0x80) {
+        // meta (M-) notation for characters with the eighth bit set
+        printf("M-");
+        char printable_char = buf[i] & 0x7F; // clear the eighth bit
+        printf("^%c", '@' + printable_char);
+      } else {
+        // regular non-printable character notation
+        printf("^%c", '@' + buf[i]);
+      }
       continue;
     }
 
