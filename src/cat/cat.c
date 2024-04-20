@@ -110,30 +110,19 @@ int main(int argc, char **argv) {
           if (strcmp(argv[i], "--number-nonblank") == 0) {
             number_nonblank = true;
             number = false;
-            continue;
-          }
-          if (strcmp(argv[i], "--show-ends") == 0) {
+          } else if (strcmp(argv[i], "--show-ends") == 0) {
             show_ends = true;
-            continue;
-          }
-          if (strcmp(argv[i], "--number") == 0) {
+          } else if (strcmp(argv[i], "--number") == 0) {
             number = true;
             number_nonblank = false;
-            continue;
-          }
-          if (strcmp(argv[i], "--squeeze-blank") == 0) {
+          } else if (strcmp(argv[i], "--squeeze-blank") == 0) {
             squeeze_blank = true;
-            continue;
-          }
-          if (strcmp(argv[i], "--show-tabs") == 0) {
+          } else if (strcmp(argv[i], "--show-tabs") == 0) {
             show_tabs = true;
             show_nonprinting = false;
-            continue;
-          }
-          if (strcmp(argv[i], "--show-nonprinting") == 0) {
+          } else if (strcmp(argv[i], "--show-nonprinting") == 0) {
             show_nonprinting = true;
             show_tabs = false;
-            continue;
           }
           break;
         default:
@@ -257,7 +246,7 @@ int print_file(char *buf) {
   }
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
-    // higher priority than the numbers
+    // higher priority
     // NOTE: not the prettiest code, but it works, so don't touch it
     if (squeeze_blank && buf[i] == '\n') {
       // skip over consecutive '\n' characters
@@ -280,8 +269,7 @@ int print_file(char *buf) {
       continue;
     }
     if (show_ends && buf[i] == '\n') {
-      printf("$\n");
-      continue;
+      putchar('$');
     }
     if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
       printf("\n%*d  ", NUMBER_BEFORE, ++lines);
