@@ -299,7 +299,6 @@ int print_stdin(void) {
       return 1;
     }
   }
-  perror("could not read from stdin");
 
-  __builtin_unreachable();
+  return 0;
 }
