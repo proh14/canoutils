@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,25 +11,27 @@
 
 #include "version_info.h"
 
-static char const *TOKEN_REPR[] = {
-    [TOK_UKN] = "???", [TOK_INT] = "int", [TOK_ADD] = "add", [TOK_SUB] = "sub",
-    [TOK_MUL] = "mul", [TOK_DIV] = "div", [TOK_EOF] = "eof", [TOK_WIP] = "wip",
-};
+static void tree_free(ast *root) {
+  if (root->any.typ == AST_UNARY)
+    tree_free(root->unary.next);
+  if (root->any.typ == AST_BINOP) {
+    tree_free(root->binop.prev);
+    tree_free(root->binop.next);
+  }
+  free(root);
+}
 
 static bool expr_run(char **argv) {
-  token *tokp;
-  lexer lex = {.argv = argv};
+  lexer lex = {.argv = argv, 0};
+  parser p = {.tok = lex_get_next_token(&lex), .lx = &lex};
+  ast *root = parser_expr(&p);
 
-  do {
-    tokp = expr_lex_get_next_token(&lex);
-    if (tokp == NULL) {
-      fprintf(stderr, "Failed to tokeinize: %s\n", strerror(errno));
-      free(lex.tokens);
-      return false;
-    }
-    printf("T[%s](%.*s)\n", TOKEN_REPR[tokp->typ], (int)tokp->len, tokp->val);
-  } while (tokp->typ != TOK_EOF);
+  if (root == NULL) {
+    fprintf(stderr, "Failed to create the AST");
+    return EXIT_FAILURE;
+  }
   free(lex.tokens);
+  tree_free(root);
   return true;
 }
 

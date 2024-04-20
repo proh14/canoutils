@@ -72,6 +72,7 @@ typedef union ast_ {
   } num;
 } ast;
 
-token *expr_lex_get_next_token(lexer *lx);
+token *lex_get_next_token(lexer *lx);
+ast *parser_expr(parser *p);
 
 #endif

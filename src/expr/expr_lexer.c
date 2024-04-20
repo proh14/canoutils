@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +11,11 @@ static token_type CHAR_TOKENS[UCHAR_MAX] = {
     [(uchar)'-'] = TOK_SUB,
     [(uchar)'*'] = TOK_MUL,
     [(uchar)'/'] = TOK_DIV,
+};
+
+static char const *TOKEN_REPR[] = {
+    [TOK_UKN] = "???", [TOK_INT] = "int", [TOK_ADD] = "add", [TOK_SUB] = "sub",
+    [TOK_MUL] = "mul", [TOK_DIV] = "div", [TOK_EOF] = "eof", [TOK_WIP] = "wip",
 };
 
 static token *get_new_token(lexer *lx) {
@@ -32,10 +38,11 @@ static token *get_new_token(lexer *lx) {
 static inline token *mk_token(token *tokp, token_type typ, char *val,
                               size_t len) {
   *tokp = (token){.typ = typ, .val = val, .len = len};
+  printf("T[%s]\n", TOKEN_REPR[tokp->typ]);
   return tokp;
 }
 
-token *expr_lex_get_next_token(lexer *lx) {
+token *lex_get_next_token(lexer *lx) {
   token *tokp = get_new_token(lx);
   char *arg = *lx->argv++;
 
