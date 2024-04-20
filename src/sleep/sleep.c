@@ -1,9 +1,9 @@
+#include <ctype.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <unistd.h>
-#include <signal.h>
 
 #define NAME "sleep (canoutils)"
 #define VERSION "1.0.0"
@@ -29,7 +29,7 @@ static unsigned int parse_int(char *arg) {
 }
 
 static void handle_sigalrm(int sig) {
-  (void) sig;
+  (void)sig;
   exit(EXIT_SUCCESS);
 }
 
