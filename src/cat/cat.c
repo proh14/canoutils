@@ -15,6 +15,31 @@
   do {                                                                         \
     printf("Usage: cat [OPTION]... [FILE]...\n");                              \
     printf("Concatenate FILE(s) to standard output.\n");                       \
+    printf("\n");                                                              \
+    printf("With no FILE, or when FILE is -, read standard input.\n");         \
+    printf("\n");                                                              \
+    printf("  -A, --show-all           equivalent to -vET\n");                 \
+    printf("  -b, --number-nonblank    number nonempty output lines, "         \
+           "overrides -n\n");                                                  \
+    printf("  -e                       equivalent to -vE\n");                  \
+    printf("  -E, --show-ends          display $ at end of each line\n");      \
+    printf("  -n, --number             number all output lines\n");            \
+    printf(                                                                    \
+        "  -s, --squeeze-blank      suppress repeated empty output lines\n");  \
+    printf("  -t                       equivalent to -vT\n");                  \
+    printf("  -T, --show-tabs          display TAB characters as ^I\n");       \
+    /* TODO: If done, remove the note */                                       \
+    printf("  -u                       (ignored) --NOTE:  not yet "            \
+           "implemented\n");                                                   \
+    printf("  -v, --show-nonprinting   use ^ and M- notation, except for LFD " \
+           "and TAB\n");                                                       \
+    printf("      --help        display this help and exit\n");                \
+    printf("      --version     output version information and exit\n");       \
+    printf("\n");                                                              \
+    printf("Examples:\n");                                                     \
+    printf("  cat f - g  Output f's contents, then standard input, then g's "  \
+           "contents.\n");                                                     \
+    printf("  cat        Copy standard input to standard output.\n");          \
   } while (0)
 
 #define print_incorrect_args()                                                 \
@@ -59,20 +84,6 @@ int main(int argc, char **argv) {
     return (print_stdin(0) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
-  if (!strcmp(argv[1], "--version")) {
-    assert_argc(argc, 2);
-
-    print_version();
-    return EXIT_SUCCESS;
-  }
-
-  if (!strcmp(argv[1], "--help")) {
-    assert_argc(argc, 2);
-
-    print_help();
-    return EXIT_SUCCESS;
-  }
-
   int filec = 0; // file count
   char *paths[ARGS_MAX];
 
@@ -100,6 +111,29 @@ int main(int argc, char **argv) {
           break;
         case 't':
           flags |= ShowNonprinting | ShowTabs;
+          break;
+        case '-':
+          if (!strcmp(argv[i], "--show-all")) {
+            flags |= ShowNonprinting | ShowEnds | ShowTabs;
+          } else if (!strcmp(argv[i], "--number-nonblank")) {
+            flags |= 1 << (stridx(FLAGLIST, 'b'));
+          } else if (!strcmp(argv[i], "--show-ends")) {
+            flags |= 1 << (stridx(FLAGLIST, 'E'));
+          } else if (!strcmp(argv[i], "--number")) {
+            flags |= 1 << (stridx(FLAGLIST, 'n'));
+          } else if (!strcmp(argv[i], "--squeeze-blank")) {
+            flags |= 1 << (stridx(FLAGLIST, 's'));
+          } else if (!strcmp(argv[i], "--show-tabs")) {
+            flags |= 1 << (stridx(FLAGLIST, 'T'));
+          } else if (!strcmp(argv[i], "--show-nonprinting")) {
+            flags |= 1 << (stridx(FLAGLIST, 'v'));
+          } else if (!strcmp(argv[i], "--help")) {
+            print_help();
+            return EXIT_SUCCESS;
+          } else if (!strcmp(argv[i], "--version")) {
+            print_version();
+            return EXIT_SUCCESS;
+          }
           break;
         default:
           flags |= 1 << (stridx(FLAGLIST, argv[i][j]));
