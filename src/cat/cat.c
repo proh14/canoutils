@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
     if (len > 1 && argv[i][0] == '-') {
       for (int j = 1; j < len; ++j) {
         switch (argv[i][j]) {
+        // flags that are multiple flags in one
         case 'A':
           flags |= ShowNonprinting | ShowEnds | ShowTabs;
           break;
@@ -137,7 +138,7 @@ int main(int argc, char **argv) {
           break;
         default: {
           int flag = stridx(FLAGLIST, argv[i][j]);
-          if (flag == -1) {
+          if (flag < 0) {
             fprintf(stderr, "cat: invalid option `-%c`\n", argv[i][j]);
             fprintf(stderr, "Try 'cat --help' for more information.\n");
             return EXIT_FAILURE;
@@ -164,7 +165,7 @@ int main(int argc, char **argv) {
 int cat(int filec, char **paths, unsigned int flags) {
   // print stdin
   if (filec == 0 || !paths) {
-    return (print_stdin(flags) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return print_stdin(flags);
   }
 
   for (int i = 0; i < filec; ++i) {
@@ -290,8 +291,6 @@ int print_stdin(unsigned int flags) {
 }
 
 inline __attribute__((const)) int stridx(const char *str, char c) {
-  for (const char *p = str; *p != '\0'; p++)
-    if (*p == c)
-      return (int)(p - str);
-  return -1;
+  const char *p = strchr(str, c);
+  return (p) ? (int)(p - str) : -1;
 }
