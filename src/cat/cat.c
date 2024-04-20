@@ -78,10 +78,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // TODO: `cat [file] -[args]` works, but `cat -[args] [file]` doesn't
-
   // parse arguments
-  // parsing arguments like `-nET` (= `-n -E -T`)
   for (int i = 1; i < argc; ++i) {
     int len = strlen(argv[i]);
     if (len > 1 && argv[i][0] == '-') {
@@ -110,7 +107,6 @@ int main(int argc, char **argv) {
           show_tabs = false;
           continue;
         case '-':
-          // TODO:
           if (strcmp(argv[i], "--number-nonblank") == 0) {
             number_nonblank = true;
             number = false;
