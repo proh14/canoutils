@@ -9,10 +9,7 @@
 #define VERSION "1.0.0"
 #define AUTHOR "Akos Szijgyarto (SzAkos04)"
 
-#define print_version()                                                        \
-  do {                                                                         \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
-  } while (0)
+#include "version_info.h"
 
 #define print_help()                                                           \
   do {                                                                         \
@@ -26,124 +23,127 @@
     printf("see `cat --help`\n");                                              \
   } while (0)
 
+#define assert_argc(argc, n)                                                   \
+  do {                                                                         \
+    if (argc != n) {                                                           \
+      print_incorrect_args();                                                  \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0)
+
 #define BUF_MAX_LEN 4096 // max length of a buffer in bytes
-#define PATH_LEN 256     // max length of a path in bytes
+#define PATH_MAX 256     // max length of a path in bytes
 #define ARGS_MAX 16      // number of the max arguments
 #define ARGS_LEN 32      // max length of the arguments in bytes
 
-bool number_nonblank = false;  // number nonempty output lines, overrides -n
-bool show_ends = false;        // display $ at end of each line
-bool number = false;           // number all output lines
-bool squeeze_blank = false;    // suppress repeated empty output lines
-bool show_tabs = false;        // display TAB characters as ^I
-bool show_nonprinting = false; // use ^ and M- notation, except for LFD and TAB
+typedef enum {
+  NumberNonblank = (1 << 0),  // number nonempty output lines, overrides -n
+  ShowEnds = (1 << 1),        // display $ at end of each line
+  Number = (1 << 2),          // number all output lines
+  SqueezeBlank = (1 << 3),    // suppress repeated empty output lines
+  ShowTabs = (1 << 4),        // display TAB characters as ^I
+  ShowNonprinting = (1 << 5), // use ^ and M- notation, except for LFD and TAB
+} Flag;
 
-int cat(int filec, char **paths);
-int print_file(char *buf);
-int print_stdin(void);
+int cat(int filec, char **paths, unsigned int flags);
+int print_file(char *buf, unsigned int flags);
+int print_stdin(unsigned int flags);
 
 int main(int argc, char **argv) {
   if (argc < 2) {
     // print stdin
-    if (print_stdin() != 0) {
-      return 1;
-    }
-    return 0;
+    return (print_stdin(0) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
   if (strcmp(argv[1], "--version") == 0) {
-    if (argc != 2) {
-      print_incorrect_args();
-      return 1;
-    }
+    assert_argc(argc, 2);
 
     print_version();
-    return 0;
+    return EXIT_SUCCESS;
   }
 
   if (strcmp(argv[1], "--help") == 0) {
-    if (argc != 2) {
-      print_incorrect_args();
-      return 1;
-    }
+    assert_argc(argc, 2);
 
     print_help();
-    return 0;
+    return EXIT_SUCCESS;
   }
 
   int filec = 0; // file count
-  char **paths = (char **)malloc(sizeof(char) * PATH_LEN * ARGS_MAX);
+  char **paths = (char **)malloc(sizeof(char) * PATH_MAX * ARGS_MAX);
+
   if (!paths) {
     perror("could not allocate memory");
-    return 1;
+    return EXIT_FAILURE;
   }
+
+  unsigned int flags;
 
   // parse arguments
   for (int i = 1; i < argc; ++i) {
+    flags = 0;
     int len = strlen(argv[i]);
     if (len > 1 && argv[i][0] == '-') {
       for (int j = 1; j < len; ++j) {
         switch (argv[i][j]) {
         case 'A':
-          show_nonprinting = true;
-          show_ends = true;
-          show_tabs = true;
+          flags |= ShowNonprinting;
+          flags |= ShowEnds;
+          flags |= ShowTabs;
           continue;
         case 'b':
-          number_nonblank = true;
-          number = false;
+          flags &= ~Number;
+          flags |= NumberNonblank;
           continue;
         case 'e':
-          show_nonprinting = true;
-          show_ends = true;
+          flags |= ShowNonprinting;
+          flags |= ShowEnds;
           continue;
         case 'E':
-          show_ends = true;
+          flags |= ShowEnds;
           continue;
         case 'n':
-          number = true;
-          number_nonblank = false;
+          flags &= ~NumberNonblank;
+          flags |= Number;
           continue;
         case 's':
-          squeeze_blank = true;
+          flags |= SqueezeBlank;
           continue;
         case 't':
-          show_nonprinting = true;
-          show_tabs = true;
+          flags |= ShowNonprinting;
+          flags |= ShowTabs;
           continue;
         case 'T':
-          show_tabs = true;
+          flags |= ShowTabs;
           continue;
         case 'v':
-          show_nonprinting = true;
+          flags |= ShowNonprinting;
           continue;
         case '-':
           if (strcmp(argv[i], "--show-all") == 0) {
-            show_nonprinting = true;
-            show_ends = true;
-            show_tabs = true;
+            flags |= ShowNonprinting;
+            flags |= ShowEnds;
+            flags |= ShowTabs;
           } else if (strcmp(argv[i], "--number-nonblank") == 0) {
-            number_nonblank = true;
-            number = false;
+            flags |= NumberNonblank;
+            flags &= ~Number;
           } else if (strcmp(argv[i], "--show-ends") == 0) {
-            show_ends = true;
+            flags |= ShowEnds;
           } else if (strcmp(argv[i], "--number") == 0) {
-            number = true;
-            number_nonblank = false;
+            flags |= Number;
+            flags &= ~NumberNonblank;
           } else if (strcmp(argv[i], "--squeeze-blank") == 0) {
-            squeeze_blank = true;
+            flags |= SqueezeBlank;
           } else if (strcmp(argv[i], "--show-tabs") == 0) {
-            show_tabs = true;
-            show_nonprinting = false;
+            flags |= ShowTabs;
           } else if (strcmp(argv[i], "--show-nonprinting") == 0) {
-            show_nonprinting = true;
-            show_tabs = false;
+            flags |= ShowNonprinting;
           }
           break;
         default:
           fprintf(stderr, "unknown argument `%s`", argv[i]);
           free(paths);
-          return 1;
+          return EXIT_FAILURE;
         }
       }
     } else {
@@ -151,24 +151,24 @@ int main(int argc, char **argv) {
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
         fprintf(stderr, "file `%s` not found\n", argv[i]);
         free(paths);
-        return 1;
+        return EXIT_FAILURE;
       }
 
       paths[filec++] = argv[i];
     }
   }
 
-  if (cat(filec, paths) != 0) {
+  if (cat(filec, paths, flags) != 0) {
     free(paths);
-    return 1;
+    return EXIT_FAILURE;
   }
 
   free(paths);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
-int cat(int filec, char **paths) {
+int cat(int filec, char **paths, unsigned int flags) {
   // print stdin
   if (filec == 0 || !paths) {
     char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
@@ -177,7 +177,7 @@ int cat(int filec, char **paths) {
       return 1;
     }
 
-    if (print_stdin() != 0) {
+    if (print_stdin(flags) != 0) {
       return 1;
     }
 
@@ -195,7 +195,7 @@ int cat(int filec, char **paths) {
         return 1;
       }
 
-      if (print_stdin() != 0) {
+      if (print_stdin(flags) != 0) {
         return 1;
       }
 
@@ -235,7 +235,7 @@ int cat(int filec, char **paths) {
 
     fclose(infile);
 
-    if (print_file(buf) != 0) {
+    if (print_file(buf, flags) != 0) {
       free(buf);
       return 1;
     }
@@ -247,13 +247,15 @@ int cat(int filec, char **paths) {
 
 #define NUMBER_BEFORE 6 // number of spaces before line numbers
 
-int print_file(char *buf) {
+int print_file(char *buf, unsigned int flags) {
   int lines = 1;
-  if (number) {
+  /* if (number) { */
+  if ((flags & Number)) {
     // print number before the first line
     printf("%*d  ", NUMBER_BEFORE, lines);
   }
-  if (number_nonblank) {
+  /* if (number_nonblank) { */
+  if ((flags & NumberNonblank)) {
     if (buf[0] != '\n' && buf[1] != '\0') {
       // print number before the first line
       printf("%*d  ", NUMBER_BEFORE, lines);
@@ -263,12 +265,12 @@ int print_file(char *buf) {
   for (int i = 0; i < len; ++i) {
     // higher priority
     // NOTE: not the prettiest code, but it works
-    if (squeeze_blank && buf[i] == '\n') {
+    if ((flags & SqueezeBlank) && buf[i] == '\n') {
       // skip over consecutive '\n' characters
       if (i + 1 < len && buf[i + 1] == '\n') {
         // if the consecutive '\n' characters are over
         if (i + 2 < len && buf[i + 2] != '\n') {
-          if (number) {
+          if ((flags & Number)) {
             printf("\n%*d  ", NUMBER_BEFORE, ++lines);
           } else {
             putchar('\n');
@@ -278,23 +280,24 @@ int print_file(char *buf) {
       }
     }
 
-    if (number_nonblank && buf[i] == '\n' && buf[i + 1] != '\n' &&
+    if ((flags & NumberNonblank) && buf[i] == '\n' && buf[i + 1] != '\n' &&
         buf[i + 1] != '\0') {
       printf("\n%*d  ", NUMBER_BEFORE, ++lines);
       continue;
     }
-    if (show_ends && buf[i] == '\n') {
+    if ((flags & ShowEnds) && buf[i] == '\n') {
       putchar('$');
     }
-    if (number && buf[i] == '\n' && buf[i + 1] != '\0') {
+    if ((flags & Number) && buf[i] == '\n' && buf[i + 1] != '\0') {
       printf("\n%*d  ", NUMBER_BEFORE, ++lines);
       continue;
     }
-    if (show_tabs && buf[i] == '\t') {
+    if ((flags & ShowTabs) && buf[i] == '\t') {
       printf("^I");
       continue;
     }
-    if (show_nonprinting && !isprint(buf[i]) && buf[i] != 9 && buf[i] != 10) {
+    if ((flags & ShowNonprinting) && !isprint(buf[i]) && buf[i] != 9 &&
+        buf[i] != 10) {
       if (buf[i] & 0x80) {
         // meta (M-) notation for characters with the eighth bit set
         printf("M-");
@@ -313,10 +316,10 @@ int print_file(char *buf) {
   return 0;
 }
 
-int print_stdin(void) {
+int print_stdin(unsigned int flags) {
   char buf[BUF_MAX_LEN];
   while (fgets(buf, BUF_MAX_LEN, stdin)) {
-    if (print_file(buf) != 0) {
+    if (print_file(buf, flags) != 0) {
       return 1;
     }
   }
