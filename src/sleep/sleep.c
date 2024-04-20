@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,23 +10,6 @@
 #define AUTHOR "Eike Flath"
 
 #include "version_info.h"
-
-static unsigned int parse_int(char *arg) {
-  unsigned int n = 0;
-  for (int i = 0; arg[i]; i++) {
-    if (!isdigit(arg[i])) {
-      fprintf(stderr, "sleep: invalid time interval '%s'\n", arg);
-      exit(EXIT_FAILURE);
-    }
-    unsigned int new_n = n * 10 + (arg[i] - '0');
-    if (new_n < n) { // overflow
-      fprintf(stderr, "sleep: time interval '%s' is too big\n", arg);
-      exit(EXIT_FAILURE);
-    }
-    n = new_n;
-  }
-  return n;
-}
 
 static void handle_sigalrm(int sig) {
   (void)sig;
@@ -42,7 +25,20 @@ int main(int argc, char **argv) {
     print_version();
     return EXIT_SUCCESS;
   }
-  unsigned int n = parse_int(argv[1]);
+  char *endptr = NULL;
+  long n = strtol(argv[1], &endptr, 10);
+  if (argv[1][0] == '\0' || *endptr != '\0') {
+    fprintf(stderr, "sleep: invalid time interval '%s'\n", argv[1]);
+    return EXIT_FAILURE;
+  }
+  if (n < 0) {
+    fprintf(stderr, "sleep: please provide a non-negative time interval\n");
+    return EXIT_FAILURE;
+  }
+  if (n > UINT_MAX) {
+    fprintf(stderr, "sleep: time interval '%s' is too big\n", argv[1]);
+    return EXIT_FAILURE;
+  }
   signal(SIGALRM, handle_sigalrm);
-  return sleep(n) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return sleep((unsigned int)n) == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
