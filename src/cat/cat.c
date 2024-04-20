@@ -21,7 +21,7 @@
 
 #define print_incorrect_args()                                                 \
   do {                                                                         \
-    printf("incorrect args\n");                                                \
+    printf("incorrect arguments\n");                                           \
     printf("see `cat --help`\n");                                              \
   } while (0)
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   if (argc < 2) {
     // print stdin
     if (print_stdin() != 0) {
-      exit(1);
+      return 1;
     }
     return 0;
   }
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
   if (strcmp(argv[1], "--version") == 0) {
     if (argc != 2) {
       print_incorrect_args();
-      exit(1);
+      return 1;
     }
 
     print_version();
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
   if (strcmp(argv[1], "--help") == 0) {
     if (argc != 2) {
       print_incorrect_args();
-      exit(1);
+      return 1;
     }
 
     print_help();
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   char **paths = (char **)malloc(sizeof(char) * PATH_LEN * ARGS_MAX);
   if (!paths) {
     perror("could not allocate memory");
-    exit(1);
+    return 1;
   }
 
   // TODO: `cat [file] -[args]` works, but `cat -[args] [file]` doesn't
@@ -102,55 +102,56 @@ int main(int argc, char **argv) {
         case 'T':
           show_tabs = true;
           continue;
+        case '-':
+          // TODO:
+          if (strcmp(argv[i], "--number-nonblank") == 0) {
+            number_nonblank = true;
+            number = false;
+            continue;
+          }
+          if (strcmp(argv[i], "--show-ends") == 0) {
+            show_ends = true;
+            continue;
+          }
+          if (strcmp(argv[i], "--number") == 0) {
+            number = true;
+            number_nonblank = false;
+            continue;
+          }
+          if (strcmp(argv[i], "--squeeze-blank") == 0) {
+            squeeze_blank = true;
+            continue;
+          }
+          if (strcmp(argv[i], "--show-tabs") == 0) {
+            show_tabs = true;
+            continue;
+          }
+          break;
         default:
           fprintf(stderr, "unknown argument `-%c`", argv[i][j]);
           free(paths);
           return 1;
         }
       }
-      goto parsing_done;
+      // if the argument is parsed, continue
+      continue;
+    }
+    // otherwise parse the file path
+
+    // check if the file is accessible
+    if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
+      fprintf(stderr, "file `%s` not found\n", argv[i]);
+      free(paths);
+      return 1;
     }
 
-    // parsing individual arguments
-    if (strcmp(argv[i], "-b") == 0 ||
-        strcmp(argv[i], "--number-nonblank") == 0) {
-      number_nonblank = true;
-      number = false;
-      continue;
-    }
-    if (strcmp(argv[i], "-E") == 0 || strcmp(argv[i], "--show-ends") == 0) {
-      show_ends = true;
-      continue;
-    }
-    if (strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--number") == 0) {
-      number = true;
-      number_nonblank = false;
-      continue;
-    }
-    if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--squeeze-blank") == 0) {
-      squeeze_blank = true;
-      continue;
-    }
-    if (strcmp(argv[i], "-T") == 0 || strcmp(argv[i], "--show-tabs") == 0) {
-      show_tabs = true;
-      continue;
-    } else {
-      // check if the file is accessible
-      if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
-        fprintf(stderr, "file `%s` not found\n", argv[i]);
-        free(paths);
-        exit(1);
-      }
-
-      paths[filec++] = argv[i];
-      continue;
-    }
+    paths[filec++] = argv[i];
+    continue;
   }
 
-parsing_done:
   if (cat(filec, paths) != 0) {
     free(paths);
-    exit(1);
+    return 1;
   }
 
   free(paths);
@@ -159,6 +160,7 @@ parsing_done:
 }
 
 int cat(int filec, char **paths) {
+  // print stdin
   if (filec == 0 || !paths) {
     char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
     if (!buf) {
@@ -176,7 +178,7 @@ int cat(int filec, char **paths) {
   }
 
   for (int i = 0; i < filec; ++i) {
-    // read from stdin
+    // print stdin
     if (strcmp(paths[i], "-") == 0) {
       char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
       if (!buf) {
@@ -251,7 +253,7 @@ int print_file(char *buf) {
   int len = strlen(buf);
   for (int i = 0; i < len; ++i) {
     // higher priority than the numbers
-    // NOTE: Not the prettiest code, but it works, so don't touch it
+    // NOTE: not the prettiest code, but it works, so don't touch it
     if (squeeze_blank && buf[i] == '\n') {
       // skip over consecutive '\n' characters
       if (i + 1 < len && buf[i + 1] == '\n') {
