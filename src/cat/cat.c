@@ -100,11 +100,9 @@ int main(int argc, char **argv) {
           continue;
         case 'T':
           show_tabs = true;
-          show_nonprinting = false;
           continue;
         case 'v':
           show_nonprinting = true;
-          show_tabs = false;
           continue;
         case '-':
           if (strcmp(argv[i], "--number-nonblank") == 0) {
@@ -279,7 +277,7 @@ int print_file(char *buf) {
       printf("^I");
       continue;
     }
-    if (show_nonprinting && !isprint(buf[i])) {
+    if (show_nonprinting && !isprint(buf[i]) && buf[i] != 9 && buf[i] != 10) {
       if (buf[i] & 0x80) {
         // meta (M-) notation for characters with the eighth bit set
         printf("M-");
