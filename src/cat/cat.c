@@ -31,10 +31,10 @@
     }                                                                          \
   } while (0)
 
-#define BUF_MAX_LEN 4096 // max length of a buffer in bytes
-#define PATH_MAX 256     // max length of a path in bytes
-#define ARGS_MAX 16      // number of the max arguments
-#define ARGS_LEN 32      // max length of the arguments in bytes
+#define BUF_MAX 4096 // max length of a buffer in bytes
+#define PATH_MAX 256 // max length of a path in bytes
+#define ARGS_MAX 16  // number of the max arguments
+#define ARGS_LEN 32  // max length of the arguments in bytes
 
 typedef enum {
   NumberNonblank = (1 << 0),  // number nonempty output lines, overrides -n
@@ -55,14 +55,14 @@ int main(int argc, char **argv) {
     return (print_stdin(0) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
-  if (strcmp(argv[1], "--version") == 0) {
+  if (!strcmp(argv[1], "--version")) {
     assert_argc(argc, 2);
 
     print_version();
     return EXIT_SUCCESS;
   }
 
-  if (strcmp(argv[1], "--help") == 0) {
+  if (!strcmp(argv[1], "--help")) {
     assert_argc(argc, 2);
 
     print_help();
@@ -120,23 +120,23 @@ int main(int argc, char **argv) {
           flags |= ShowNonprinting;
           continue;
         case '-':
-          if (strcmp(argv[i], "--show-all") == 0) {
+          if (!strcmp(argv[i], "--show-all")) {
             flags |= ShowNonprinting;
             flags |= ShowEnds;
             flags |= ShowTabs;
-          } else if (strcmp(argv[i], "--number-nonblank") == 0) {
+          } else if (!strcmp(argv[i], "--number-nonblank")) {
             flags |= NumberNonblank;
             flags &= ~Number;
-          } else if (strcmp(argv[i], "--show-ends") == 0) {
+          } else if (!strcmp(argv[i], "--show-ends")) {
             flags |= ShowEnds;
-          } else if (strcmp(argv[i], "--number") == 0) {
+          } else if (!strcmp(argv[i], "--number")) {
             flags |= Number;
             flags &= ~NumberNonblank;
-          } else if (strcmp(argv[i], "--squeeze-blank") == 0) {
+          } else if (!strcmp(argv[i], "--squeeze-blank")) {
             flags |= SqueezeBlank;
-          } else if (strcmp(argv[i], "--show-tabs") == 0) {
+          } else if (!strcmp(argv[i], "--show-tabs")) {
             flags |= ShowTabs;
-          } else if (strcmp(argv[i], "--show-nonprinting") == 0) {
+          } else if (!strcmp(argv[i], "--show-nonprinting")) {
             flags |= ShowNonprinting;
           }
           break;
@@ -171,25 +171,13 @@ int main(int argc, char **argv) {
 int cat(int filec, char **paths, unsigned int flags) {
   // print stdin
   if (filec == 0 || !paths) {
-    char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
-    if (!buf) {
-      perror("could not allocate memory");
-      return 1;
-    }
-
-    if (print_stdin(flags) != 0) {
-      return 1;
-    }
-
-    free(buf);
-
-    return 0;
+    return (print_stdin(flags) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
   }
 
   for (int i = 0; i < filec; ++i) {
     // print stdin
-    if (strcmp(paths[i], "-") == 0) {
-      char *buf = (char *)malloc(sizeof(char) * BUF_MAX_LEN);
+    if (!strcmp(paths[i], "-")) {
+      char *buf = (char *)malloc(sizeof(char) * BUF_MAX);
       if (!buf) {
         perror("could not allocate memory");
         return 1;
@@ -317,8 +305,8 @@ int print_file(char *buf, unsigned int flags) {
 }
 
 int print_stdin(unsigned int flags) {
-  char buf[BUF_MAX_LEN];
-  while (fgets(buf, BUF_MAX_LEN, stdin)) {
+  char buf[BUF_MAX];
+  while (fgets(buf, BUF_MAX, stdin)) {
     if (print_file(buf, flags) != 0) {
       return 1;
     }
