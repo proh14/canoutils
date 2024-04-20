@@ -24,6 +24,7 @@ BINS += ln
 BINS += mv
 BINS += chmod
 BINS += sh
+BINS += sleep
 
 BINARIES := $(foreach b, $(BINS), src/$b/$b)
 BINS-COPY := $(foreach b, $(BINS), bin/$b)
