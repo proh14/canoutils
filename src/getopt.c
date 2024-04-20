@@ -1,6 +1,7 @@
 #include "./getopt.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 char *optarg = NULL;
 int optind = 1, opterr = 0, optopt = '\0';
@@ -49,6 +50,92 @@ int getopt(int argc, char **argv, const char *optstring) {
       return -1;
     }
     nextchar = &argv[coropt][1];
+  }
+
+  int idx;
+  if (!((idx = getopt_in(*nextchar, optstring)) >= 0)) {
+    getopt_printerr("invalid option\n");
+    optopt = *nextchar;
+    return '?';
+  }
+
+  c = *nextchar++;
+  if (*nextchar == '\0') {
+    coropt++;
+    nextchar = NULL;
+  }
+
+  if (optstring[idx + 1] != ':') {
+    coropt--;
+    optind++;
+    goto exit;
+  }
+
+  if (nextchar != NULL && *nextchar != '\0') {
+    coropt++;
+  }
+
+  if (coropt >= argc || argv[coropt][0] == '-') {
+    getopt_printerr("option requires an argument\n");
+    optopt = *nextchar;
+    return '?';
+  }
+
+  optarg = argv[coropt];
+
+exit: {
+  int i = coropt;
+  int j = coropt - 1;
+  while (j >= 0 && argv[j][0] != '-') {
+    getopt_exchange(argv, i, j);
+    i--;
+    j--;
+  }
+}
+  optind++;
+  return c;
+}
+
+int getopt_long(int argc, char *const argv[], const char *optstring, const struct option *longopts, int *longindex) {
+  int c;
+  static char *nextchar = NULL;
+  static int coropt = 1;
+  if (!coropt) {
+    coropt = 1;
+  }
+
+  if (coropt >= argc || argv[coropt] == NULL) {
+    return -1;
+  }
+
+  while (argv[coropt] && argv[coropt][0] != '-') {
+    coropt++;
+  }
+
+  if (nextchar == NULL || *nextchar == '\0') {
+    if (coropt >= argc) {
+      return -1;
+    }
+    nextchar = &argv[coropt][1];
+  }
+		
+  if(*nextchar == '-') {
+	nextchar++;
+	while(longopts->name != NULL) {
+		printf("name: %s %s\n", longopts->name, nextchar);
+		if(strcmp(longopts->name, nextchar) == 0) {
+			coropt++;
+			nextchar = NULL;
+			c = longopts->val;
+			goto exit;
+		}			
+		longopts++;
+	}
+	coropt++;
+	optind++;
+	nextchar = NULL;
+	getopt_printerr("invalid option\n");
+	return '?';
   }
 
   int idx;
