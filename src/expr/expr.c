@@ -21,6 +21,34 @@ static void tree_free(ast *root) {
   free(root);
 }
 
+static void print_depth(int depth) {
+  for (int i = 1; i < depth; i++)
+    printf("  ");
+  if (depth)
+    printf("- ");
+}
+
+static void traverse_ast(ast *root, int depth) {
+  if (root->any.typ == AST_NUM) {
+    print_depth(depth);
+    printf("(int: %d)", root->num.val);
+    return;
+  }
+  print_depth(depth);
+  if (root->any.typ == AST_UNARY) {
+    printf("([%s]\n", root->unary.tok->val);
+    traverse_ast(root->unary.next, depth + 1);
+  } else if (root->any.typ == AST_BINOP) {
+    printf("([%s]\n", root->binop.tok->val);
+    traverse_ast(root->binop.prev, depth + 1);
+    printf("\n");
+    traverse_ast(root->binop.next, depth + 1);
+  }
+  printf(")");
+  if (depth == 0)
+    printf("\n");
+}
+
 static bool expr_run(char **argv) {
   lexer lex = {.argv = argv, 0};
   parser p = {.tok = lex_get_next_token(&lex), .lx = &lex};
@@ -30,8 +58,9 @@ static bool expr_run(char **argv) {
     fprintf(stderr, "Failed to create the AST");
     return EXIT_FAILURE;
   }
-  free(lex.tokens);
+  traverse_ast(root, 0);
   tree_free(root);
+  free(lex.tokens);
   return true;
 }
 
