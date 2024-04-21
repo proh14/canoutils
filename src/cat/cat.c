@@ -187,6 +187,7 @@ int main(int argc, char **argv) {
   }
 
   free_paths(filec, paths);
+  return EXIT_SUCCESS;
 }
 
 int cat(int filec, char **paths, unsigned int flags) {
