@@ -1,5 +1,4 @@
 #define _POSIX_C_SOURCE 200112L // for setenv
-#define _DEFAULT_SOURCE         // for settimeofday
 
 #include <ctype.h>
 #include <errno.h>
@@ -7,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
 
 #define NAME "date (canoutils)"
@@ -72,10 +70,9 @@ static int set_time(char *str) {
     fprintf(stderr, "date: '%s' does not specify a valid time\n", str);
     return EXIT_FAILURE;
   }
-  // printf("%s\n", ctime(&t));
-  struct timeval tv = {.tv_sec = t};
-  if (settimeofday(&tv, NULL)) {
-    fprintf(stderr, "date: cannot settimeofday: %s\n", strerror(errno));
+  struct timespec ts = {.tv_sec = t};
+  if (clock_settime(CLOCK_REALTIME, &ts)) {
+    fprintf(stderr, "date: cannot set date: %s\n", strerror(errno));
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
