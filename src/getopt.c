@@ -78,6 +78,7 @@ int getopt(int argc, char *argv[], const char *optstring) {
       nextchar = NULL;
       optind++;
     }
+    optind++;
     c = '?';
     goto exit;
   }
