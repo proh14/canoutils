@@ -1,8 +1,10 @@
 #include <ctype.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #define NAME "cat (canoutils)"
@@ -56,8 +58,9 @@
     }                                                                          \
   } while (0)
 
-#define BUF_MAX 65535  // max length of a buffer in bytes
-#define ARGS_LEN 32767 // max length of the arguments in bytes
+#define BUF_MAX 65535 // max length of a buffer in bytes
+
+#define CONST_FUNC __attribute__((const))
 
 typedef enum {
   NumberNonblank = (1 << 0),  // number nonempty output lines, overrides -n
@@ -175,7 +178,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
       }
 
-      paths[filec] = (char *)malloc(ARGS_LEN * sizeof(char));
+      paths[filec] = (char *)malloc((strlen(argv[i]) + 1) * sizeof(char));
       if (!paths[filec]) {
         perror("could not allocate memory");
         free_paths(filec, paths);
@@ -218,30 +221,60 @@ int cat(int filec, char **paths, unsigned int flags) {
       continue;
     }
 
-    // read file
-    FILE *infile = fopen(paths[i], "r");
-    if (!infile) {
-      perror("could not open file");
+    /* // read file */
+    /* FILE *infile = fopen(paths[i], "r"); */
+    /* if (!infile) { */
+    /*   perror("could not open file"); */
+    /*   return 1; */
+    /* } */
+
+    /* // get the size of the file */
+    /* fseek(infile, 0, SEEK_END); */
+    /* long file_size = ftell(infile); */
+    /* fseek(infile, 0, SEEK_SET); */
+
+    /* char buf[file_size + 1]; */
+
+    /* // read the file into the buffer */
+    /* size_t bytes_read; */
+    /* int ch; */
+    /* for (bytes_read = 0; (ch = fgetc(infile)) != EOF; ++bytes_read) { */
+    /*   buf[bytes_read] = (char)ch; */
+    /* } */
+    /* if (bytes_read != (size_t)file_size) { */
+    /*   fprintf(stderr, "cat: could not read file\n"); */
+    /*   fclose(infile); */
+    /*   return 1; */
+    /* } */
+    /* buf[file_size] = '\0'; // make sure the string is null terminated */
+
+    /* fclose(infile); */
+
+    int fd = open(paths[i], O_RDONLY);
+    if (fd < 0) {
+      perror("cat: could not open device");
       return 1;
     }
 
     // get the size of the file
-    fseek(infile, 0, SEEK_END);
-    long file_size = ftell(infile);
-    fseek(infile, 0, SEEK_SET);
-
-    char buf[file_size + 1];
-
-    // read the file into the buffer
-    size_t files_read = fread(buf, sizeof(char), file_size, infile);
-    if (files_read != (size_t)file_size) {
-      fprintf(stderr, "cat: could not read file\n");
-      fclose(infile);
+    struct stat st;
+    if (fstat(fd, &st) < 0) {
+      perror("cat: could not get file size");
+      close(fd);
       return 1;
     }
-    buf[file_size] = '\0'; // make sure the string is null terminated
+    off_t file_size = st.st_size;
 
-    fclose(infile);
+    char buf[file_size + 1];
+    printf("%d\n", (int)file_size);
+    ssize_t bytes_read = read(fd, buf, sizeof(buf) - 1);
+    if (bytes_read != file_size) {
+      perror("cat: could not read file");
+      close(fd);
+      return 1;
+    }
+
+    buf[bytes_read] = '\0'; // null-terminate the string
 
     if (print_buffer(buf, flags) != 0) {
       return 1;
@@ -329,7 +362,7 @@ int print_stdin(unsigned int flags) {
   return 0;
 }
 
-inline __attribute__((const)) int stridx(const char *str, char c) {
+inline CONST_FUNC int stridx(const char *str, char c) {
   const char *p = strchr(str, c);
   return (p) ? (int)(p - str) : -1;
 }
