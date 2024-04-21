@@ -70,10 +70,10 @@ int getopt(int argc, char *argv[], const char *optstring) {
     return -1;
   }
 
-  int idx;
-  if (!((idx = getopt_in(*nextchar, optstring)) >= 0)) {
+  int idx = idx = getopt_in(*nextchar, optstring);
+  if (!(idx >= 0)) {
     getopt_printerr("invalid option\n");
-    optopt = *nextchar;
+    optopt = (unsigned)*nextchar;
     if (*(nextchar + 1) == '\0') {
       nextchar = NULL;
       optind++;
@@ -83,7 +83,7 @@ int getopt(int argc, char *argv[], const char *optstring) {
     goto exit;
   }
 
-  c = *nextchar++;
+  c = (unsigned)*nextchar++;
   if (*nextchar == '\0') {
     coropt++;
     optind++;
@@ -101,7 +101,7 @@ int getopt(int argc, char *argv[], const char *optstring) {
 
   if (coropt >= argc || argv[coropt][0] == '-') {
     getopt_printerr("option requires an argument\n");
-    optopt = *nextchar;
+    optopt = (unsigned)*nextchar;
     c = '?';
     optind++;
     goto exit;
