@@ -100,7 +100,7 @@
               value = build-single-bin name;
             })
             (attrNames (pkgs.lib.filterAttrs
-              (n: v: v == "directory")
+              (n: v: v == "directory" && n != "global")
               (readDir ./src)))));
     });
 }
