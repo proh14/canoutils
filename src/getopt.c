@@ -57,18 +57,17 @@ int getopt(int argc, char *argv[], const char *optstring) {
     coropt++;
   }
 
+  if (coropt >= argc) {
+    return -1;
+  }
+
+  nextchar = &argv[coropt][1];
+
   if (strcmp(argv[coropt], "--") == 0) {
     EXCHANGE(coropt);
     end_of_args = 0;
     coropt++;
     return -1;
-  }
-
-  if (nextchar == NULL || *nextchar == '\0') {
-    if (coropt >= argc) {
-      return -1;
-    }
-    nextchar = &argv[coropt][1];
   }
 
   int idx;
@@ -86,8 +85,8 @@ int getopt(int argc, char *argv[], const char *optstring) {
   c = *nextchar++;
   if (*nextchar == '\0') {
     coropt++;
-    nextchar = NULL;
     optind++;
+    nextchar = argv[coropt];
   }
 
   if (optstring[idx + 1] != ':') {
