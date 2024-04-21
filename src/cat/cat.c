@@ -55,9 +55,10 @@ static const char HELP[] = {
     }                                                                          \
   } while (0)
 
+// only used when reading from stdin
 #define BUF_MAX 65535 // max length of a buffer in bytes
 
-#define CONST_FUNC __attribute__((const))
+#define CONST_ATTR __attribute__((const))
 
 typedef enum {
   NumberNonblank = (1 << 0),  // number nonempty output lines, overrides -n
@@ -74,19 +75,15 @@ int cat(int filec, char **paths, unsigned int flags);
 int print_buffer(char *buf, unsigned int flags);
 int print_stdin(unsigned int flags);
 
-inline __attribute__((const)) int stridx(const char *str, char c);
+inline CONST_ATTR int stridx(const char *str, char c);
 
 void free_paths(int filec, char **paths);
 
 int main(int argc, char **argv) {
-  if (argc < 2) {
-    // print stdin
-    return (print_stdin(0) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-  }
-
   int filec = 0; // file count
+  // if argc == 1, then it is allocated 0 bytes
   char **paths = (char **)malloc((argc - 1) * sizeof(char *));
-  if (!paths) {
+  if (!paths && argc > 1) {
     perror("could not allocate memory");
     return EXIT_FAILURE;
   }
@@ -188,7 +185,7 @@ int main(int argc, char **argv) {
   }
 
   paths = (char **)realloc(paths, filec * sizeof(char *));
-  if (!paths) {
+  if (!paths && argc > 1) {
     perror("could not allocate memory");
     return EXIT_FAILURE;
   }
@@ -341,7 +338,7 @@ int print_stdin(unsigned int flags) {
   return 0;
 }
 
-inline CONST_FUNC int stridx(const char *str, char c) {
+inline CONST_ATTR int stridx(const char *str, char c) {
   const char *p = strchr(str, c);
   return (p) ? (int)(p - str) : -1;
 }
