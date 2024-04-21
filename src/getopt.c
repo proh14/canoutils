@@ -40,7 +40,7 @@ static void getopt_exchange(char *argv[], int i, int j) {
   argv[j] = tmp;
 }
 
-int getopt(int argc, char **argv, const char *optstring) {
+int getopt(int argc, char *argv[], const char *optstring) {
   int c;
   static char *nextchar = NULL;
   static int coropt = 1;
@@ -67,20 +67,26 @@ int getopt(int argc, char **argv, const char *optstring) {
   if (!((idx = getopt_in(*nextchar, optstring)) >= 0)) {
     getopt_printerr("invalid option\n");
     optopt = *nextchar;
-    return '?';
+    if (*(nextchar + 1) == '\0') {
+      nextchar = NULL;
+      optind++;
+    }
+    c = '?';
+    goto exit;
   }
 
   c = *nextchar++;
   if (*nextchar == '\0') {
     coropt++;
     nextchar = NULL;
+    optind++;
   }
 
   if (optstring[idx + 1] != ':') {
     coropt--;
-    optind++;
     goto exit;
   }
+  EXCHANGE(coropt - 1);
 
   if (nextchar != NULL && *nextchar != '\0') {
     coropt++;
@@ -89,21 +95,14 @@ int getopt(int argc, char **argv, const char *optstring) {
   if (coropt >= argc || argv[coropt][0] == '-') {
     getopt_printerr("option requires an argument\n");
     optopt = *nextchar;
-    return '?';
+    c = '?';
+    goto exit;
   }
 
   optarg = argv[coropt];
-
-exit: {
-  int i = coropt;
-  int j = coropt - 1;
-  while (j >= 0 && argv[j][0] != '-') {
-    getopt_exchange(argv, i, j);
-    i--;
-    j--;
-  }
-}
   optind++;
+
+exit : { EXCHANGE(coropt); }
   return c;
 }
 
@@ -202,6 +201,6 @@ int getopt_long(int argc, char *argv[], const char *optstring,
   optarg = argv[coropt];
   optind++;
 
-exit: { EXCHANGE(coropt); }
+exit : { EXCHANGE(coropt); }
   return c;
 }
