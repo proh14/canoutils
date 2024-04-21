@@ -1,4 +1,4 @@
-// Reimplementation of GNU getopt
+// Reimplementation of GNU getopt by proh14 and cobbcoding
 #ifndef _GETOPT_H_
 #define _GETOPT_H_
 
