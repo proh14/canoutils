@@ -66,7 +66,7 @@ int getopt(int argc, char *argv[], const char *optstring) {
   if (strcmp(argv[coropt], "--") == 0) {
     EXCHANGE(coropt);
     end_of_args = 1;
-    coropt++;
+    optind++;
     return -1;
   }
 
@@ -102,6 +102,7 @@ int getopt(int argc, char *argv[], const char *optstring) {
     getopt_printerr("option requires an argument\n");
     optopt = *nextchar;
     c = '?';
+    optind++;
     goto exit;
   }
 
