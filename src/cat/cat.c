@@ -12,33 +12,33 @@
 
 #include "version_info.h"
 
+static const char HELP[] = {
+    "Usage: cat [OPTION]... [FILE]...\n"
+    "Concatenate FILE(s) to standard output.\n"
+    "\n"
+    "With no FILE, or when FILE is -, read standard input.\n"
+    "\n"
+    "  -A, --show-all           equivalent to -vET\n"
+    "  -b, --number-nonblank    number nonempty output lines, overrides -n\n"
+    "  -e                       equivalent to -vE\n"
+    "  -E, --show-ends          display $ at end of each line\n"
+    "  -n, --number             number all output lines\n"
+    "  -s, --squeeze-blank      suppress repeated empty output lines\n"
+    "  -t                       equivalent to -vT\n"
+    "  -T, --show-tabs          display TAB characters as ^I\n"
+    "  -u                       (ignored)\n"
+    "  -v, --show-nonprinting   use ^ and M- notation, except for LFD and TAB\n"
+    "      --help        display this help and exit\n"
+    "      --version     output version information and exit\n"
+    "\n"
+    "Examples:\n"
+    "  cat f - g  Output f's contents, then standard input, then g's "
+    "contents.\n"
+    "  cat        Copy standard input to standard output.\n"};
+
 #define print_help()                                                           \
   do {                                                                         \
-    printf("Usage: cat [OPTION]... [FILE]...\n");                              \
-    printf("Concatenate FILE(s) to standard output.\n");                       \
-    printf("\n");                                                              \
-    printf("With no FILE, or when FILE is -, read standard input.\n");         \
-    printf("\n");                                                              \
-    printf("  -A, --show-all           equivalent to -vET\n");                 \
-    printf("  -b, --number-nonblank    number nonempty output lines, "         \
-           "overrides -n\n");                                                  \
-    printf("  -e                       equivalent to -vE\n");                  \
-    printf("  -E, --show-ends          display $ at end of each line\n");      \
-    printf("  -n, --number             number all output lines\n");            \
-    printf(                                                                    \
-        "  -s, --squeeze-blank      suppress repeated empty output lines\n");  \
-    printf("  -t                       equivalent to -vT\n");                  \
-    printf("  -T, --show-tabs          display TAB characters as ^I\n");       \
-    printf("  -u                       (ignored)\n");                          \
-    printf("  -v, --show-nonprinting   use ^ and M- notation, except for LFD " \
-           "and TAB\n");                                                       \
-    printf("      --help        display this help and exit\n");                \
-    printf("      --version     output version information and exit\n");       \
-    printf("\n");                                                              \
-    printf("Examples:\n");                                                     \
-    printf("  cat f - g  Output f's contents, then standard input, then g's "  \
-           "contents.\n");                                                     \
-    printf("  cat        Copy standard input to standard output.\n");          \
+    printf("%s", HELP);                                                        \
   } while (0)
 
 #define print_incorrect_args()                                                 \
@@ -68,7 +68,7 @@ typedef enum {
   ShowNonprinting = (1 << 5), // use ^ and M- notation, except for LFD and TAB
 } Flag;
 
-static const char FLAGLIST[] = "bEnsTuv";
+static const char FLAGLIST[] = "bEnsTv";
 
 int cat(int filec, char **paths, unsigned int flags);
 int print_buffer(char *buf, unsigned int flags);
