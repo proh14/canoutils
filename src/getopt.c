@@ -5,6 +5,7 @@
 
 char *optarg = NULL;
 int optind = 1, opterr = 0, optopt = '\0';
+static int end_of_args = 1;
 
 #define EXCHANGE(coropt)                                                       \
   do {                                                                         \
@@ -54,6 +55,13 @@ int getopt(int argc, char *argv[], const char *optstring) {
 
   while (argv[coropt] && argv[coropt][0] != '-') {
     coropt++;
+  }
+
+  if (strcmp(argv[coropt], "--") == 0) {
+    EXCHANGE(coropt);
+    end_of_args = 0;
+    coropt++;
+    return -1;
   }
 
   if (nextchar == NULL || *nextchar == '\0') {
