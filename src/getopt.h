@@ -2,6 +2,10 @@
 #ifndef _GETOPT_H_
 #define _GETOPT_H_
 
+#define no_argument 0
+#define required_argument 1
+#define optional_argument 2
+
 struct option {
   const char *name;
   int has_arg;

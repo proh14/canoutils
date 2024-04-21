@@ -110,13 +110,12 @@ int getopt(int argc, char *argv[], const char *optstring) {
   optarg = argv[coropt];
   optind++;
 
-exit : { EXCHANGE(coropt); }
+exit: { EXCHANGE(coropt); }
   return c;
 }
 
 int getopt_long(int argc, char *argv[], const char *optstring,
                 const struct option *longopts, int *longindex) {
-  (void)longindex;
   int c;
   static char *nextchar = NULL;
   static int coropt = 1;
@@ -132,25 +131,37 @@ int getopt_long(int argc, char *argv[], const char *optstring,
     coropt++;
   }
 
-  if (coropt >= argc) {
-    return -1;
+  if (nextchar == NULL || *nextchar == '\0') {
+    if (coropt >= argc) {
+      return -1;
+    }
+    nextchar = &argv[coropt][1];
   }
-
-  nextchar = &argv[coropt][1];
 
   if (*nextchar == '-') {
     nextchar++;
-    while (longopts->name != NULL) {
-      if (strcmp(longopts->name, nextchar) == 0) {
+    const struct option *curlong = longopts;
+    while (curlong->name != NULL) {
+      if (strcmp(curlong->name, nextchar) == 0) {
+        if (longindex != NULL)
+          *longindex = curlong - longopts;
         optind++;
         nextchar = NULL;
-        c = longopts->val;
-        if (longopts->has_arg) {
+        if (longopts->flag) {
+          *curlong->flag = curlong->val;
+          c = 0;
+        } else {
+          c = curlong->val;
+        }
+        if (curlong->has_arg == optional_argument &&
+            ((coropt + 1) >= argc || argv[(coropt + 1)][0] == '-'))
+          goto exit;
+        if (curlong->has_arg) {
           EXCHANGE(coropt);
           coropt++;
           if (coropt >= argc || argv[coropt][0] == '-') {
             getopt_printerr("option requires an argument\n");
-            optopt = longopts->val;
+            optopt = curlong->val;
             c = '?';
             goto exit;
           }
@@ -159,7 +170,7 @@ int getopt_long(int argc, char *argv[], const char *optstring,
         }
         goto exit;
       }
-      longopts++;
+      curlong++;
     }
     optind++;
     optopt = longopts->val;
@@ -175,6 +186,7 @@ int getopt_long(int argc, char *argv[], const char *optstring,
     optopt = (unsigned)*nextchar;
     if (*(nextchar + 1) == '\0') {
       nextchar = NULL;
+      optind++;
     }
     optind++;
     c = '?';
@@ -184,7 +196,6 @@ int getopt_long(int argc, char *argv[], const char *optstring,
   c = (unsigned)*nextchar++;
   if (*nextchar == '\0') {
     coropt++;
-    nextchar = argv[coropt];
     optind++;
   }
 
@@ -201,6 +212,7 @@ int getopt_long(int argc, char *argv[], const char *optstring,
   if (coropt >= argc || argv[coropt][0] == '-') {
     getopt_printerr("option requires an argument\n");
     optopt = (unsigned)*nextchar;
+    optind++;
     c = '?';
     goto exit;
   }
@@ -208,6 +220,6 @@ int getopt_long(int argc, char *argv[], const char *optstring,
   optarg = argv[coropt];
   optind++;
 
-exit : { EXCHANGE(coropt); }
+exit: { EXCHANGE(coropt); }
   return c;
 }
