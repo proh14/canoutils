@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -221,35 +220,7 @@ int cat(int filec, char **paths, unsigned int flags) {
       continue;
     }
 
-    /* // read file */
-    /* FILE *infile = fopen(paths[i], "r"); */
-    /* if (!infile) { */
-    /*   perror("could not open file"); */
-    /*   return 1; */
-    /* } */
-
-    /* // get the size of the file */
-    /* fseek(infile, 0, SEEK_END); */
-    /* long file_size = ftell(infile); */
-    /* fseek(infile, 0, SEEK_SET); */
-
-    /* char buf[file_size + 1]; */
-
-    /* // read the file into the buffer */
-    /* size_t bytes_read; */
-    /* int ch; */
-    /* for (bytes_read = 0; (ch = fgetc(infile)) != EOF; ++bytes_read) { */
-    /*   buf[bytes_read] = (char)ch; */
-    /* } */
-    /* if (bytes_read != (size_t)file_size) { */
-    /*   fprintf(stderr, "cat: could not read file\n"); */
-    /*   fclose(infile); */
-    /*   return 1; */
-    /* } */
-    /* buf[file_size] = '\0'; // make sure the string is null terminated */
-
-    /* fclose(infile); */
-
+    // read file
     int fd = open(paths[i], O_RDONLY);
     if (fd < 0) {
       perror("cat: could not open device");
