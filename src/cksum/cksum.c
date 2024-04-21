@@ -1,26 +1,101 @@
 #include<stdint.h>
 #include<stdio.h>
+#include<stdlib.h>
 
 #define NAME "cksum (canoutils)"
 #define VERSION "0.0.1"
 #define AUTHOR "cospplredman"
 
-#include"../version_info.h"
+#include "../version_info.h"
+#include "../getopt.h"
 
-#define X(a,...) for(a)for(r=(r<<8)^(e&0xff)^__VA_ARGS__,e=0,i=31;i>23;i--)if(r&(1<<i))r^=(1<<i)|(q>>(32-i)),e^=q<<(i-24);
+static const char usage[] = {
+	"  -v   version information\n"
+};
 
-uint32_t q=0x04c11db7,r,e;d,i=1,t,j,k,f=2;main(c,v)char**v;{
-	if(c<2)exit(1);
-	for(;++k<c;){
-		if(f&&(!strcmp(v[k], "--")|!strcmp(v[k], "-v"))){
-			if(v[k][1]=='-')f=0;
-			if(f==2){f=1;print_version();}
-			continue;
+static const uint32_t crc32_ = 0x04c11db7;
+
+uint32_t crc32(FILE *file, size_t *octets){
+	uint32_t remainder = 0;
+	uint8_t difference = 0;
+
+	size_t length = 0;
+
+
+	/* calculate crc of file contents */
+	int cur_char;
+	while((cur_char = getc(file)) != EOF){
+		remainder = (remainder << 8) ^ (difference & 0xff) ^ cur_char;
+		difference = 0;
+		for(int i = 31; i > 23; i--){
+			if(remainder & (1 << i)){
+				remainder ^= (1 << i) | (crc32_ >> (32 - i));
+				difference ^= crc32_ << (i - 24);
+			}
 		}
-		FILE*f=fopen(v[k],"r");
-		if(f==NULL)exit(1);
-		X(;(d=getc(f))>=0;t++,d)X(j=t;j;,(j&0xff),j>>=8)X(j=3;j--;,0)
-		if(printf("%u %d %s\n",~((r<<8)|(e&0xff)),t,v[k])<0)exit(1);
-		r=e=t=0;
+		length++;
+	}
+
+	*octets = length;
+
+	/* calculate crc of file contents + length of files in bytes */
+	while(length){
+		cur_char = (length & 0xff);
+		length >>= 8;
+
+		remainder = (remainder << 8) ^ (difference & 0xff) ^ cur_char;
+		difference = 0;
+		for(int i = 31; i > 23; i--){
+			if(remainder & (1 << i)){
+				remainder ^= (1 << i) | (crc32_ >> (32 - i));
+				difference ^= crc32_ << (i - 24);
+			}
+		}
+	}
+
+
+	/* work through the remaining 3 bytes  */
+	for(int j = 0; j < 3; j++){
+		remainder = (remainder << 8) ^ (difference & 0xff);
+		difference = 0;
+		for(int i = 31; i > 23; i--){
+			if(remainder & (1 << i)){
+				remainder ^= (1 << i) | (crc32_ >> (32 - i));
+				difference ^= crc32_ << (i - 24);
+			}
+		}
+	}
+
+	return ~((remainder<<8)|(difference&0xff));
+	
+}
+
+int main(int argc, char ** argv) {
+	if(argc<2){
+		printf("%s\n", usage);
+		exit(1);
+	}
+
+	int opt;
+	while((opt = getopt(argc, argv, "v")) != -1){
+		switch(opt){
+			case 'v':
+				print_version();
+				return EXIT_SUCCESS;
+			break;
+		}
+	}
+
+	int index = optind;
+	for(;index < argc; index++){
+		FILE*file=fopen(argv[index],"r");
+
+		if(file==NULL)
+			return EXIT_FAILURE;
+
+		size_t octets;
+		uint32_t crc = crc32(file, &octets);
+
+		printf("%u %lu %s\n", crc, octets, argv[index]);
 	}
 }
