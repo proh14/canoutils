@@ -109,9 +109,19 @@ int main(int argc, char **argv) {
 
   size_t cap = INITIAL_BUF_SIZE;
   char *buf = malloc(cap);
+  if (!buf) {
+    fprintf(stderr, "date: malloc failed: %s\n", strerror(errno));
+    return EXIT_FAILURE;
+  }
   while (!strftime(buf, cap, &operand[1], tm)) {
     cap *= 2;
-    buf = realloc(buf, cap);
+    char *new_buf = realloc(buf, cap);
+    if (!new_buf) {
+      free(buf);
+      fprintf(stderr, "date: realloc failed: %s\n", strerror(errno));
+      return EXIT_FAILURE;
+    }
+    buf = new_buf;
   }
   printf("%s\n", buf);
   free(buf);
