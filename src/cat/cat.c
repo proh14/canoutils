@@ -68,7 +68,7 @@ typedef enum {
   ShowNonprinting = (1 << 5), // use ^ and M- notation, except for LFD and TAB
 } Flag;
 
-static const char FLAGLIST[] = "bEnsTv";
+static const char FLAGLIST[] = "bEnsTuv";
 
 int cat(int filec, char **paths, unsigned int flags);
 int print_buffer(char *buf, unsigned int flags);
@@ -116,6 +116,16 @@ int main(int argc, char **argv) {
           break;
         case 't':
           flags |= ShowNonprinting | ShowTabs;
+          break;
+        case 'u':
+          // disable buffering for the output stream
+          // NOTE: for some reason this makes the program run slower on my
+          // machine. Running the program with the `-u` flag on this source
+          // code, the average runtime increases by approximately 10ms
+          if (setvbuf(stdout, NULL, _IONBF, 0) != 0) {
+            perror("Error setting output buffer mode");
+            return EXIT_FAILURE;
+          }
           break;
         case '-':
           if (!strcmp(argv[i], "--show-all")) {
@@ -245,8 +255,7 @@ int print_buffer(char *buf, unsigned int flags) {
   if ((flags & Number)) {
     // print number before the first line
     printf("%*d  ", BEFORE_NUMBER, lines);
-  }
-  if ((flags & NumberNonblank)) {
+  } else if ((flags & NumberNonblank)) {
     if (buf[0] != '\n' && buf[1] != '\0') {
       // print number before the first line
       printf("%*d  ", BEFORE_NUMBER, lines);
