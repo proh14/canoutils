@@ -57,7 +57,6 @@
   } while (0)
 
 #define BUF_MAX 65535  // max length of a buffer in bytes
-#define ARGS_MAX 32767 // number of the max arguments
 #define ARGS_LEN 32767 // max length of the arguments in bytes
 
 typedef enum {
@@ -86,8 +85,7 @@ int main(int argc, char **argv) {
   }
 
   int filec = 0; // file count
-  /* char *paths[ARGS_MAX]; */
-  char **paths = (char **)malloc(ARGS_MAX * sizeof(char *));
+  char **paths = (char **)malloc((argc - 1) * sizeof(char *));
   if (!paths) {
     perror("could not allocate memory");
     return EXIT_FAILURE;
@@ -175,6 +173,12 @@ int main(int argc, char **argv) {
       strcpy(paths[filec], argv[i]);
       filec++;
     }
+  }
+
+  paths = (char **)realloc(paths, filec * sizeof(char *));
+  if (!paths) {
+    perror("could not allocate memory");
+    return EXIT_FAILURE;
   }
 
   if (cat(filec, paths, flags) != 0) {
