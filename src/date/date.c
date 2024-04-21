@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200112L // for setenv
 #define _DEFAULT_SOURCE         // for settimeofday
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -27,10 +28,17 @@ static struct tm *get_time(void) {
 }
 
 static int set_time(char *str) {
+  size_t n;
+  for (n = 0; str[n]; n++) {
+    if (!isdigit(str[n])) {
+      fprintf(stderr, "date: invalid date '%s'\n", str);
+      return EXIT_FAILURE;
+    }
+  }
+
 #define s(i) (str[i] - '0')
   struct tm tm;
   memcpy(&tm, get_time(), sizeof tm);
-  size_t n = strlen(str);
   bool century_specified = false;
   switch (n) {
   case 12:
@@ -55,8 +63,7 @@ static int set_time(char *str) {
     tm.tm_isdst = -1;
     break;
   default:
-    fprintf(stderr, "%s",
-            "date: specify time in the format %m%d%H%M[[%C]%y]\n");
+    fprintf(stderr, "date: invalid date '%s'\n", str);
     return EXIT_FAILURE;
   }
 #undef s
