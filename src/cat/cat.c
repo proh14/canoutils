@@ -266,7 +266,6 @@ int cat(int filec, char **paths, unsigned int flags) {
     off_t file_size = st.st_size;
 
     char buf[file_size + 1];
-    printf("%d\n", (int)file_size);
     ssize_t bytes_read = read(fd, buf, sizeof(buf) - 1);
     if (bytes_read != file_size) {
       perror("cat: could not read file");
@@ -352,13 +351,6 @@ int print_buffer(char *buf, unsigned int flags) {
 }
 
 int print_stdin(unsigned int flags) {
-  /* char buf[BUF_MAX]; */
-  /* while (fgets(buf, BUF_MAX, stdin)) { */
-  /*   if (print_buffer(buf, flags) != 0) { */
-  /*     return 1; */
-  /*   } */
-  /* } */
-  /* return 0; */
 
   char buf[BUF_MAX];
   ssize_t bytes_read;
