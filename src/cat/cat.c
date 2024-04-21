@@ -41,20 +41,6 @@ static const char HELP[] = {
     printf("%s", HELP);                                                        \
   } while (0)
 
-#define print_incorrect_args()                                                 \
-  do {                                                                         \
-    printf("incorrect arguments\n");                                           \
-    printf("see `cat --help`\n");                                              \
-  } while (0)
-
-#define assert_argc(argc, n)                                                   \
-  do {                                                                         \
-    if (argc != n) {                                                           \
-      print_incorrect_args();                                                  \
-      exit(EXIT_FAILURE);                                                      \
-    }                                                                          \
-  } while (0)
-
 // only used when reading from stdin
 #define BUF_MAX 65535 // max length of a buffer in bytes
 
@@ -84,7 +70,7 @@ int main(int argc, char **argv) {
   // if argc == 1, then it is allocated 0 bytes
   char **paths = (char **)malloc((argc - 1) * sizeof(char *));
   if (!paths && argc > 1) {
-    perror("could not allocate memory");
+    perror("cat: could not allocate memory");
     return EXIT_FAILURE;
   }
 
@@ -120,7 +106,7 @@ int main(int argc, char **argv) {
           // machine. Running the program with the `-u` flag on this source
           // code, the average runtime increases by approximately 10ms
           if (setvbuf(stdout, NULL, _IONBF, 0) != 0) {
-            perror("Error setting output buffer mode");
+            perror("cat: error setting output buffer mode");
             return EXIT_FAILURE;
           }
           break;
@@ -174,7 +160,7 @@ int main(int argc, char **argv) {
 
       paths[filec] = (char *)malloc((strlen(argv[i]) + 1) * sizeof(char));
       if (!paths[filec]) {
-        perror("could not allocate memory");
+        perror("cat: could not allocate memory");
         free_paths(filec, paths);
         return EXIT_FAILURE;
       }
@@ -186,7 +172,7 @@ int main(int argc, char **argv) {
 
   paths = (char **)realloc(paths, filec * sizeof(char *));
   if (!paths && argc > 1) {
-    perror("could not allocate memory");
+    perror("cat: could not allocate memory");
     return EXIT_FAILURE;
   }
 
