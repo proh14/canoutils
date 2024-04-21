@@ -131,17 +131,19 @@ int main(int argc, char **argv) {
           if (!strcmp(argv[i], "--show-all")) {
             flags |= ShowNonprinting | ShowEnds | ShowTabs;
           } else if (!strcmp(argv[i], "--number-nonblank")) {
-            flags |= 1 << (stridx(FLAGLIST, 'b'));
+            flags &= ~Number;
+            flags |= NumberNonblank;
           } else if (!strcmp(argv[i], "--show-ends")) {
-            flags |= 1 << (stridx(FLAGLIST, 'E'));
+            flags |= ShowEnds;
           } else if (!strcmp(argv[i], "--number")) {
-            flags |= 1 << (stridx(FLAGLIST, 'n'));
+            flags &= ~NumberNonblank;
+            flags |= Number;
           } else if (!strcmp(argv[i], "--squeeze-blank")) {
-            flags |= 1 << (stridx(FLAGLIST, 's'));
+            flags |= SqueezeBlank;
           } else if (!strcmp(argv[i], "--show-tabs")) {
-            flags |= 1 << (stridx(FLAGLIST, 'T'));
+            flags |= ShowTabs;
           } else if (!strcmp(argv[i], "--show-nonprinting")) {
-            flags |= 1 << (stridx(FLAGLIST, 'v'));
+            flags |= ShowNonprinting;
           } else if (!strcmp(argv[i], "--help")) {
             print_help();
             free_paths(filec, paths);
