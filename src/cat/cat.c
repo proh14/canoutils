@@ -352,11 +352,29 @@ int print_buffer(char *buf, unsigned int flags) {
 }
 
 int print_stdin(unsigned int flags) {
+  /* char buf[BUF_MAX]; */
+  /* while (fgets(buf, BUF_MAX, stdin)) { */
+  /*   if (print_buffer(buf, flags) != 0) { */
+  /*     return 1; */
+  /*   } */
+  /* } */
+  /* return 0; */
+
   char buf[BUF_MAX];
-  while (fgets(buf, BUF_MAX, stdin)) {
+  ssize_t bytes_read;
+
+  // Read from stdin using a loop to handle large inputs
+  while ((bytes_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
     if (print_buffer(buf, flags) != 0) {
       return 1;
     }
+    // clear the buffer before new prompt
+    memset(buf, 0, sizeof(buf));
+  }
+
+  if (bytes_read == -1) {
+    perror("cat: read error");
+    return 1;
   }
 
   return 0;
