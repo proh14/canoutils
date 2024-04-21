@@ -56,10 +56,9 @@
     }                                                                          \
   } while (0)
 
-#define BUF_MAX 4096 // max length of a buffer in bytes
-#define PATH_MAX 256 // max length of a path in bytes
-#define ARGS_MAX 16  // number of the max arguments
-#define ARGS_LEN 32  // max length of the arguments in bytes
+#define BUF_MAX 65535  // max length of a buffer in bytes
+#define ARGS_MAX 32767 // number of the max arguments
+#define ARGS_LEN 32767 // max length of the arguments in bytes
 
 typedef enum {
   NumberNonblank = (1 << 0),  // number nonempty output lines, overrides -n
@@ -78,6 +77,8 @@ int print_stdin(unsigned int flags);
 
 inline __attribute__((const)) int stridx(const char *str, char c);
 
+void free_paths(int filec, char **paths);
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     // print stdin
@@ -85,7 +86,12 @@ int main(int argc, char **argv) {
   }
 
   int filec = 0; // file count
-  char *paths[ARGS_MAX];
+  /* char *paths[ARGS_MAX]; */
+  char **paths = (char **)malloc(ARGS_MAX * sizeof(char *));
+  if (!paths) {
+    perror("could not allocate memory");
+    return EXIT_FAILURE;
+  }
 
   unsigned int flags = 0;
 
@@ -130,9 +136,11 @@ int main(int argc, char **argv) {
             flags |= 1 << (stridx(FLAGLIST, 'v'));
           } else if (!strcmp(argv[i], "--help")) {
             print_help();
+            free_paths(filec, paths);
             return EXIT_SUCCESS;
           } else if (!strcmp(argv[i], "--version")) {
             print_version();
+            free_paths(filec, paths);
             return EXIT_SUCCESS;
           }
           break;
@@ -141,6 +149,7 @@ int main(int argc, char **argv) {
           if (flag < 0) {
             fprintf(stderr, "cat: invalid option `-%c`\n", argv[i][j]);
             fprintf(stderr, "Try 'cat --help' for more information.\n");
+            free_paths(filec, paths);
             return EXIT_FAILURE;
           }
           flags |= 1 << (flag);
@@ -152,14 +161,28 @@ int main(int argc, char **argv) {
       // check if the file is accessible
       if (access(argv[i], F_OK | R_OK) != 0 && strcmp(argv[i], "-") != 0) {
         fprintf(stderr, "cat: file `%s` not found\n", argv[i]);
+        free_paths(filec, paths);
         return EXIT_FAILURE;
       }
 
-      paths[filec++] = argv[i];
+      paths[filec] = (char *)malloc(ARGS_LEN * sizeof(char));
+      if (!paths[filec]) {
+        perror("could not allocate memory");
+        free_paths(filec, paths);
+        return EXIT_FAILURE;
+      }
+
+      strcpy(paths[filec], argv[i]);
+      filec++;
     }
   }
 
-  return (cat(filec, paths, flags) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+  if (cat(filec, paths, flags) != 0) {
+    free_paths(filec, paths);
+    return EXIT_FAILURE;
+  }
+
+  free_paths(filec, paths);
 }
 
 int cat(int filec, char **paths, unsigned int flags) {
@@ -293,4 +316,11 @@ int print_stdin(unsigned int flags) {
 inline __attribute__((const)) int stridx(const char *str, char c) {
   const char *p = strchr(str, c);
   return (p) ? (int)(p - str) : -1;
+}
+
+void free_paths(int filec, char **paths) {
+  for (int i = 0; i < filec; i++) {
+    free(paths[i]);
+  }
+  free(paths);
 }
