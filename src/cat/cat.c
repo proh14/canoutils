@@ -29,9 +29,7 @@
         "  -s, --squeeze-blank      suppress repeated empty output lines\n");  \
     printf("  -t                       equivalent to -vT\n");                  \
     printf("  -T, --show-tabs          display TAB characters as ^I\n");       \
-    /* TODO: If done, remove the note */                                       \
-    printf("  -u                       (ignored) --NOTE:  not yet "            \
-           "implemented\n");                                                   \
+    printf("  -u                       (ignored)\n");                          \
     printf("  -v, --show-nonprinting   use ^ and M- notation, except for LFD " \
            "and TAB\n");                                                       \
     printf("      --help        display this help and exit\n");                \
