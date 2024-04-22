@@ -35,7 +35,7 @@ int str_to_mode(const char *str, mode_t *mode) {
 
 static void make_dir(const char *path) {
   if (mkdir(path, mode) == -1) {
-    if (!pflag) {
+    if (!pflag || (errno != ENOENT && pflag)) {
       fprintf(stderr, "mkdir: cannot create directory '%s': %s \n", path,
               strerror(errno));
     }
