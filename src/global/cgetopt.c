@@ -1,4 +1,6 @@
-#include "./cano_getopt.h"
+// Reimplementation of GNU getopt by proh14 and cobbcoding
+
+#include "./cgetopt.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

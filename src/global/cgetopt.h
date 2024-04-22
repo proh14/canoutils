@@ -1,6 +1,6 @@
 // Reimplementation of GNU getopt by proh14 and cobbcoding
-#ifndef _GETOPT_H_
-#define _GETOPT_H_
+#ifndef _CGETOPT_H_
+#define _CGETOPT_H_
 
 #define no_argument 0
 #define required_argument 1
