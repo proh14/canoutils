@@ -6,8 +6,8 @@
 #define VERSION "0.0.1"
 #define AUTHOR "cospplredman"
 
-#include "../getopt.h"
-#include "../version_info.h"
+#include "getopt.h"
+#include "version_info.h"
 
 static const char usage[] = {"  -v   version information\n"};
 
