@@ -58,7 +58,7 @@ typedef enum {
 static const char FLAGLIST[] = "bEnsTv";
 
 int cat(int filec, char **paths, unsigned int flags);
-int print_buffer(char *buf, unsigned int flags);
+int print_buffer(char *buf, ssize_t buf_size, unsigned int flags);
 int print_stdin(unsigned int flags);
 
 inline CONST_ATTR int stridx(const char *str, char c);
@@ -239,7 +239,7 @@ int cat(int filec, char **paths, unsigned int flags) {
 
     buf[total_bytes_read] = '\0'; // null-terminate the string
 
-    if (print_buffer(buf, flags) != 0) {
+    if (print_buffer(buf, total_bytes_read, flags) != 0) {
       close(fd);
       return 1;
     }
@@ -250,7 +250,7 @@ int cat(int filec, char **paths, unsigned int flags) {
 
 #define BEFORE_NUMBER 6 // number of spaces before line numbers
 
-int print_buffer(char *buf, unsigned int flags) {
+int print_buffer(char *buf, ssize_t buf_size, unsigned int flags) {
   int lines = 1;
   if ((flags & Number)) {
     // print number before the first line
@@ -261,15 +261,14 @@ int print_buffer(char *buf, unsigned int flags) {
       printf("%*d  ", BEFORE_NUMBER, lines);
     }
   }
-  int len = strlen(buf);
-  for (int i = 0; i < len; ++i) {
+  for (int i = 0; i < buf_size; ++i) {
     // higher priority
     // NOTE: not the prettiest code, but it works
     if ((flags & SqueezeBlank) && buf[i] == '\n') {
       // skip over consecutive '\n' characters
-      if (i + 1 < len && buf[i + 1] == '\n') {
+      if (i + 1 < buf_size && buf[i + 1] == '\n') {
         // if the consecutive '\n' characters are over
-        if (i + 2 < len && buf[i + 2] != '\n') {
+        if (i + 2 < buf_size && buf[i + 2] != '\n') {
           if ((flags & Number)) {
             printf("\n%*d  ", BEFORE_NUMBER, ++lines);
           } else {
@@ -317,12 +316,11 @@ int print_buffer(char *buf, unsigned int flags) {
 }
 
 int print_stdin(unsigned int flags) {
-
   char buf[BUF_MAX];
   ssize_t bytes_read;
 
   while ((bytes_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
-    if (print_buffer(buf, flags) != 0) {
+    if (print_buffer(buf, bytes_read, flags) != 0) {
       return 1;
     }
     // clear the buffer before new prompt
