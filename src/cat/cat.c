@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
           break;
         default: {
           int flag = stridx(FLAGLIST, argv[i][j]);
-          if (flag < 0) {
+          if (flag == -1) {
             fprintf(stderr, "cat: invalid option `-%c`\n", argv[i][j]);
             fprintf(stderr, "Try 'cat --help' for more information.\n");
             free_paths(filec, paths);
@@ -203,14 +203,14 @@ int cat(int filec, char **paths, unsigned int flags) {
 
     // read file
     int fd = open(paths[i], O_RDONLY);
-    if (fd < 0) {
+    if (fd == -1) {
       perror("cat: could not open device");
       return 1;
     }
 
     // get the size of the file
     struct stat st;
-    if (fstat(fd, &st) < 0) {
+    if (fstat(fd, &st) == -1) {
       perror("cat: could not get file size");
       close(fd);
       return 1;
@@ -218,18 +218,32 @@ int cat(int filec, char **paths, unsigned int flags) {
     off_t file_size = st.st_size;
 
     char buf[file_size + 1];
-    ssize_t bytes_read = read(fd, buf, sizeof(buf) - 1);
-    if (bytes_read != file_size) {
+    ssize_t total_bytes_read = 0;
+    while (total_bytes_read < file_size) {
+      ssize_t bytes_read =
+          read(fd, buf + total_bytes_read, file_size - total_bytes_read);
+      if (bytes_read == -1) {
+        perror("cat: error reading file");
+        close(fd);
+        return 1;
+      } else if (bytes_read == 0) {
+        break; // end of file
+      }
+      total_bytes_read += bytes_read;
+    }
+    if (total_bytes_read != file_size) {
       perror("cat: could not read file");
       close(fd);
       return 1;
     }
 
-    buf[bytes_read] = '\0'; // null-terminate the string
+    buf[total_bytes_read] = '\0'; // null-terminate the string
 
     if (print_buffer(buf, flags) != 0) {
+      close(fd);
       return 1;
     }
+    close(fd);
   }
   return 0;
 }
@@ -307,7 +321,6 @@ int print_stdin(unsigned int flags) {
   char buf[BUF_MAX];
   ssize_t bytes_read;
 
-  // Read from stdin using a loop to handle large inputs
   while ((bytes_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
     if (print_buffer(buf, flags) != 0) {
       return 1;
