@@ -312,6 +312,8 @@ int print_buffer(char *buf, ssize_t buf_size, unsigned int flags) {
     putchar(buf[i]);
   }
 
+  // clear the buffer after printing it
+  memset(buf, 0, buf_size);
   return 0;
 }
 
@@ -323,8 +325,6 @@ int print_stdin(unsigned int flags) {
     if (print_buffer(buf, bytes_read, flags) != 0) {
       return 1;
     }
-    // clear the buffer before new prompt
-    memset(buf, 0, sizeof(buf));
   }
 
   if (bytes_read == -1) {
