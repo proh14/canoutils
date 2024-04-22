@@ -1,5 +1,6 @@
 #include "cgetopt.h"
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +35,10 @@ int str_to_mode(const char *str, mode_t *mode) {
 
 static void make_dir(const char *path) {
   if (mkdir(path, mode) == -1) {
-    perror("mkdir");
+    if (!pflag) {
+      fprintf(stderr, "mkdir: cannot create directory '%s': %s \n", path,
+              strerror(errno));
+    }
     return;
   }
   if (vflag)
@@ -46,12 +50,12 @@ static void pmake_dir(char *path) {
   for (;;) {
     slash += strspn(slash, "/");
     slash += strcspn(slash, "/");
-    if (*slash == '\0')
-      break;
+    int exit = *slash == '\0';
     *slash = '\0';
-    make_dir(slash);
+    make_dir(path);
     *slash = '/';
-    slash++;
+    if (exit)
+      return;
   }
 }
 
