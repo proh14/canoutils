@@ -15,25 +15,46 @@
 #define VERSION "1.0.0"
 #define AUTHOR "CobbCoding"
 
-bool verbose = false;
-bool prompt_every = false;
-bool remove_dir = false;
-bool force = false;
-bool intrusive = false;
-bool preserve_root = true;
-bool recurse = false;
-bool one_filesystem = false;
+#include "cgetopt.h"
+#include "version_info.h"
+
 struct statvfs cur_filesystem = {0};
 
 char **shift(int *argc, char ***argv);
-void remove_recursively(DIR *dir);
-void rm_dir(char *filename);
-int rm(char *filename);
+void remove_recursively(DIR *dir, int flags);
+void rm_dir(char *filename, int flags);
+int rm(char *filename, int flags);
 
-#define print_version()                                                        \
-  do {                                                                         \
-    printf("%s\nversion: %s\nby: %s\n", NAME, VERSION, AUTHOR);                \
-  } while (0)
+enum {
+  F_HELP = -2,
+  F_VERSION = -3,
+  F_NO_PRESERVE = -4,  
+  F_PRESERVE = -5,  
+  F_ONE_FILESYSTEM = -6,
+};
+
+static const struct option longopts[] = {
+    {"version", no_argument, NULL, F_VERSION},  
+    {"help", no_argument, NULL, F_HELP},
+    {"no-preserve-root", no_argument, NULL, F_NO_PRESERVE},
+    {"preserve-root", no_argument, NULL, F_PRESERVE},
+    {"one-file-system", no_argument, NULL, F_ONE_FILESYSTEM},    
+    {"verbose", no_argument, NULL, 'v'},
+    {"recursive", no_argument, NULL, 'r'},
+    {"dir", no_argument, NULL, 'd'},
+    {NULL, 0, NULL, 0}};
+
+enum {
+  F_FORCE = 1 << 0,
+  F_PROMPT = 1 << 1,
+  F_INTRUSIVE = 1 << 2,
+  F_OFS = 1 << 3,
+  F_NPR = 1 << 4,
+  F_PR = 1 << 5,
+  F_RECURSIVE = 1 << 6,
+  F_DIR = 1 << 7,
+  F_VERBOSE = 1 << 8,
+};
 
 #define print_not_enough()                                                     \
   do {                                                                         \
@@ -61,19 +82,19 @@ char **shift(int *argc, char ***argv) {
 #define DT_DIR 4
 #define DT_REG 8
 
-void rm_dir(char *filename) {
+void rm_dir(char *filename, int flags) {
   int err = remove(filename);
-  if (err == -1 && !force) {
+  if (err == -1 && !(flags & F_FORCE)) {
     fprintf(stderr, "could not remove dir `%s`\n", filename);
     exit(1);
   }
 
-  if (verbose) {
+  if (flags & F_VERBOSE) {
     printf("removing `%s`\n", filename);
   }
 }
 
-void remove_recursively(DIR *dir) {
+void remove_recursively(DIR *dir, int flags) {
   assert(dir);
   struct dirent *file = readdir(dir);
   while (file != NULL) {
@@ -81,7 +102,7 @@ void remove_recursively(DIR *dir) {
       file = readdir(dir);
       continue;
     }
-    if (one_filesystem) {
+    if (flags & F_OFS) {
       struct statvfs new_filesystem = {0};
       if (statvfs(file->d_name, &new_filesystem) != 0) {
         fprintf(stderr, "could not get filesystem\n");
@@ -95,20 +116,20 @@ void remove_recursively(DIR *dir) {
       }
     }
     if (file->d_type == DT_REG) {
-      rm(file->d_name);
+      rm(file->d_name, flags);
     } else if (file->d_type == DT_DIR) {
       DIR *new_dir = opendir(file->d_name);
       if (chdir(file->d_name) == -1) {
         fprintf(stderr, "couldn't change directories %d\n", errno);
         exit(1);
       }
-      remove_recursively(new_dir);
+      remove_recursively(new_dir, flags);
       if (chdir("..") == -1) {
         fprintf(stderr, "could not change directories %d\n", errno);
         exit(1);
       }
       closedir(new_dir);
-      rm_dir(file->d_name);
+      rm_dir(file->d_name, flags);
     } else {
       fprintf(stderr, "error\n");
       exit(1);
@@ -117,37 +138,37 @@ void remove_recursively(DIR *dir) {
   }
 }
 
-int rm(char *filename) {
+int rm(char *filename, int flags) {
   assert(filename != NULL);
   DIR *is_dir = opendir(filename);
-  if (!remove_dir && is_dir != NULL && !recurse) {
+  if (!(flags & F_DIR) && is_dir != NULL && !(flags & F_RECURSIVE)) {
     fprintf(stderr, "`%s` is a directory\n", filename);
-    if (!force)
+    if (!(flags & F_FORCE))
       goto rm_defer;
   }
 
-  if (is_dir != NULL && recurse) {
+  if (is_dir != NULL && (flags & F_RECURSIVE)) {
     if (chdir(filename) == -1) {
       fprintf(stderr, "could not change directories\n");
       exit(1);
     }
-    remove_recursively(opendir("."));
+    remove_recursively(opendir("."), flags);
     if (chdir("..") == -1) {
       fprintf(stderr, "could not change directories\n");
       exit(1);
     }
-    rm_dir(filename);
+    rm_dir(filename, flags);
     goto rm_end;
   }
 
-  if (!is_dir || remove_dir) {
+  if (!is_dir || (flags & F_DIR)) {
     int err = remove(filename);
-    if (err == -1 && !force) {
+    if (err == -1 && !(flags & F_FORCE)) {
       fprintf(stderr, "could not remove file `%s`\n", filename);
       goto rm_defer;
     }
 
-    if (verbose) {
+    if (flags & F_VERBOSE) {
       printf("removing `%s`\n", filename);
     }
   }
@@ -169,68 +190,89 @@ rm_defer:
 }
 
 int main(int argc, char **argv) {
-  char *program = *shift(&argc, &argv);
+  char *program = argv[0];
   (void)program;
   char *filename = NULL;
-  char *flag = NULL;
   if (argc == 0) {
     fprintf(stderr, "not enough args\n");
     fprintf(stderr, "see rm --help\n");
     exit(1);
   }
 
-  shift_flags();
+  int flags = 0;
 
-  // TODO: stacking flags (i.e. rm -rf)
-  if (strcmp(flag, "--version") == 0) {
-    print_version();
-    return 0;
-  } else if (strcmp(flag, "--help") == 0) {
-    if (system("man rm")) {
-      fprintf(stderr, "error: please install man to see help page\n");
+  //  &= ~(flags)
+
+  int c = getopt_long(argc, argv, "viIdfr", longopts, NULL);
+  while (c != -1) {
+    switch (c) {
+    case F_VERSION:
+      print_version();
+      return 0;
+    case F_HELP:
+      if (system("man rm")) {
+        fprintf(stderr, "error: please install man to see help page\n");
+        exit(1);
+      };
+      break;
+    case 'v':
+      flags |= F_VERBOSE;
+      break;
+    case 'i':
+      flags &= ~(F_FORCE);
+      flags |= F_PROMPT;
+      break;
+    case 'I':
+      flags &= ~(F_FORCE);
+      flags |= F_INTRUSIVE;
+      break;
+    case 'd':
+      flags |= F_DIR;
+      break;
+    case 'f':
+      flags &= ~(F_PROMPT);          
+      flags &= ~(F_INTRUSIVE);          
+      flags |= F_FORCE;
+      break;
+    case 'R':
+    case 'r':
+      flags |= F_RECURSIVE;
+      break;
+    case F_NO_PRESERVE:
+      flags &= ~(F_NPR);
+      flags |= F_PR;
+      break;
+    case F_PRESERVE:
+      flags &= ~(F_PR);
+      flags |= F_NPR;
+      break;
+    case F_ONE_FILESYSTEM:
+      flags |= F_RECURSIVE;
+      flags |= F_OFS;
+      if (statvfs(".", &cur_filesystem) != 0) {
+        fprintf(stderr, "could not get filesystem\n");
+        exit(1);
+      }
+      break;
+    default:
+      fprintf(stderr, "unknown flag\n");
       exit(1);
-    };
-    return 0;
-  } else if (strcmp(flag, "-v") == 0) {
-    verbose = true;
-    shift_flags();
-  } else if (strcmp(flag, "-i") == 0) {
-    prompt_every = true;
-    shift_flags();
-  } else if (strcmp(flag, "-I") == 0) {
-    intrusive = true;
-    shift_flags();
-  } else if (strcmp(flag, "-d") == 0) {
-    remove_dir = true;
-    shift_flags();
-  } else if (strcmp(flag, "-f") == 0) {
-    force = true;
-    shift_flags();
-  } else if (strcmp(flag, "-r") == 0) {
-    recurse = true;
-    shift_flags();
-  } else if (strcmp(flag, "--no-preserve-root") == 0) {
-    preserve_root = false;
-    shift_flags();
-  } else if (strcmp(flag, "--preserve-root") == 0) {
-    preserve_root = true;
-    shift_flags();
-  } else if (strcmp(flag, "--one-file-system") == 0) {
-    recurse = true;
-    one_filesystem = true;
-    if (statvfs(".", &cur_filesystem) != 0) {
-      fprintf(stderr, "could not get filesystem\n");
-      exit(1);
+      break;
     }
-    shift_flags();
-  } else if (strcmp(flag, "--interactive") == 0) {
-    assert(false && "not implemented yet");
-    shift_flags();
-  } else {
-    filename = flag;
+    c = getopt_long(argc, argv, "viIdfr", longopts, NULL);
   }
 
-  if (argc > 2 && intrusive) {
+  if (optind > argc) {
+    fprintf(stderr, "error: filename not provided\n");
+    exit(1);
+  }
+
+  argv += optind;
+  argc -= optind;
+
+  filename = *shift(&argc, &argv);
+
+  if (argc > 2 && (flags & F_RECURSIVE)) {
     printf("remove %d files? ", argc + 1);
     char prompt[16] = {0};
     char *err = fgets(prompt, 16, stdin);
@@ -243,12 +285,12 @@ int main(int argc, char **argv) {
   }
 
   while (argc >= 0) {
-    if (strcmp(filename, "/") == 0) {
+    if (strcmp(filename, "/") == 0 && !(flags & F_NPR)) {
       printf("cannot remove root directory (see --no-preserve-root)\n");
       filename = *shift(&argc, &argv);
       continue;
     }
-    if (prompt_every) {
+    if (flags & F_PROMPT) {
       printf("remove file `%s`? ", filename);
       char prompt[16] = {0};
       char *err = fgets(prompt, 16, stdin);
@@ -261,12 +303,7 @@ int main(int argc, char **argv) {
         continue;
       }
     }
-
-    if (strcmp(filename, "/") == 0) {
-      fprintf(stderr, "cannot remove root directory. See --no-preserve-root\n");
-      exit(1);
-    }
-    rm(filename);
+    rm(filename, flags);
     filename = *shift(&argc, &argv);
   }
   return 0;
