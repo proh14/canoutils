@@ -82,7 +82,6 @@ uint32_t crc32(FILE *file, size_t *octets) {
 }
 
 void crc_print(char *filename, uint32_t crc, size_t octets) {
-  printf("%c\n", output_format);
   switch (output_format) {
   case 't':
     if (filename == NULL)
@@ -121,11 +120,14 @@ int main(int argc, char **argv) {
     }
   }
 
-  int index = optind;
+  argc -= optind;
+  argv += optind;
+
+  int index = 0;
   size_t octets;
   uint32_t crc;
 
-  if (argc < 2) {
+  if (argc < 1) {
     crc = crc32(stdin, &octets);
     crc_print(NULL, crc, octets);
     return EXIT_SUCCESS;
