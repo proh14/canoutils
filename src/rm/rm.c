@@ -24,7 +24,8 @@ char **shift(int *argc, char ***argv);
 void remove_recursively(DIR *dir, int flags);
 void rm_dir(char *filename, int flags);
 int rm(char *filename, int flags);
-
+void handle_remove(int *argc, char ***argv, int flags, char *filename);
+void set_flags(int *flags, int *argc, char ***argv);
 enum {
   F_HELP = -2,
   F_VERSION = -3,
@@ -173,24 +174,35 @@ rm_defer:
   return 1;
 }
 
-int main(int argc, char **argv) {
-  char *program = argv[0];
-  (void)program;
-  char *filename = NULL;
-  if (argc < 2) {
-    fprintf(stderr, "not enough args\n");
-    fprintf(stderr, "see rm --help\n");
-    exit(1);
-  }
+void handle_remove(int *argc, char ***argv, int flags, char *filename) {
+    if (strcmp(filename, "/") == 0 && !(flags & F_NPR)) {
+      printf("cannot remove root directory (see --no-preserve-root)\n");
+      filename = *shift(argc, argv);
+      return;
+    }
+    if (flags & F_PROMPT) {
+      printf("remove file `%s`? ", filename);
+      char prompt[16] = {0};
+      char *err = fgets(prompt, 16, stdin);
+      if (err == NULL) {
+        fprintf(stderr, "error: EOF\n");
+        exit(1);
+      }
+      if (strncmp(prompt, "y", 1) != 0) {
+        filename = *shift(argc, argv);
+        return;
+      }
+    }
+    rm(filename, flags);
+}
 
-  int flags = 0;
-
-  int c = getopt_long(argc, argv, "viIdfr", longopts, NULL);
+void set_flags(int *flags, int *argc, char ***argv) {
+  int c = getopt_long(*argc, *argv, "viIdfr", longopts, NULL);
   while (c != -1) {
     switch (c) {
     case F_VERSION:
       print_version();
-      return 0;
+      exit(0);
     case F_HELP:
       if (system("man rm")) {
         fprintf(stderr, "error: please install man to see help page\n");
@@ -198,39 +210,39 @@ int main(int argc, char **argv) {
       };
       break;
     case 'v':
-      flags |= F_VERBOSE;
+      *flags |= F_VERBOSE;
       break;
     case 'i':
-      flags &= ~(F_FORCE);
-      flags |= F_PROMPT;
+      *flags &= ~(F_FORCE);
+      *flags |= F_PROMPT;
       break;
     case 'I':
-      flags &= ~(F_FORCE);
-      flags |= F_INTRUSIVE;
+      *flags &= ~(F_FORCE);
+      *flags |= F_INTRUSIVE;
       break;
     case 'd':
-      flags |= F_DIR;
+      *flags |= F_DIR;
       break;
     case 'f':
-      flags &= ~(F_PROMPT);
-      flags &= ~(F_INTRUSIVE);
-      flags |= F_FORCE;
+      *flags &= ~(F_PROMPT);
+      *flags &= ~(F_INTRUSIVE);
+      *flags |= F_FORCE;
       break;
     case 'R':
     case 'r':
-      flags |= F_RECURSIVE;
+      *flags |= F_RECURSIVE;
       break;
     case F_NO_PRESERVE:
-      flags &= ~(F_NPR);
-      flags |= F_PR;
+      *flags &= ~(F_NPR);
+      *flags |= F_PR;
       break;
     case F_PRESERVE:
-      flags &= ~(F_PR);
-      flags |= F_NPR;
+      *flags &= ~(F_PR);
+      *flags |= F_NPR;
       break;
     case F_ONE_FILESYSTEM:
-      flags |= F_RECURSIVE;
-      flags |= F_OFS;
+      *flags |= F_RECURSIVE;
+      *flags |= F_OFS;
       if (statvfs(".", &cur_filesystem) != 0) {
         fprintf(stderr, "could not get filesystem\n");
         exit(1);
@@ -241,18 +253,31 @@ int main(int argc, char **argv) {
       exit(1);
       break;
     }
-    c = getopt_long(argc, argv, "viIdfr", longopts, NULL);
+    c = getopt_long(*argc, *argv, "viIdfr", longopts, NULL);
   }
 
-  if (optind > argc) {
+  if (optind > *argc) {
     fprintf(stderr, "error: filename not provided\n");
     exit(1);
   }
 
-  argv += optind;
-  argc -= optind;
+  *argv += optind;
+  *argc -= optind;
 
-  if(argc > 3 && (flags & F_INTRUSIVE)) flags |= F_PROMPT;
+  if(*argc > 3 && (*flags & F_INTRUSIVE)) *flags |= F_PROMPT;
+}
+
+int main(int argc, char **argv) {
+  char *filename = NULL;
+  if (argc < 2) {
+    fprintf(stderr, "not enough args\n");
+    fprintf(stderr, "see rm --help\n");
+    exit(1);
+  }
+
+  int flags = 0;
+
+  set_flags(&flags, &argc, &argv);
 
   filename = *shift(&argc, &argv);
 
@@ -268,26 +293,8 @@ int main(int argc, char **argv) {
       exit(0);
   }
 
-  while (argc >= 0) {
-    if (strcmp(filename, "/") == 0 && !(flags & F_NPR)) {
-      printf("cannot remove root directory (see --no-preserve-root)\n");
-      filename = *shift(&argc, &argv);
-      continue;
-    }
-    if (flags & F_PROMPT) {
-      printf("remove file `%s`? ", filename);
-      char prompt[16] = {0};
-      char *err = fgets(prompt, 16, stdin);
-      if (err == NULL) {
-        fprintf(stderr, "error: EOF\n");
-        exit(1);
-      }
-      if (strncmp(prompt, "y", 1) != 0) {
-        filename = *shift(&argc, &argv);
-        continue;
-      }
-    }
-    rm(filename, flags);
+  while(argc >= 0) {
+    handle_remove(&argc, &argv, flags, filename);
     filename = *shift(&argc, &argv);
   }
   return 0;
