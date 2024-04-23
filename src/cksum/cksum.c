@@ -1,7 +1,7 @@
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 
 #define NAME "cksum (canoutils)"
@@ -11,24 +11,21 @@
 #include "cgetopt.h"
 #include "version_info.h"
 
-static const char usage[] = {
-	"Usage: cksum [Option]... [File]...\n"
-	"  --version   version information\n"
-	"  --help      display this help and exit\n"
-	"  --raw       output raw crc\n"
-	"  --tag       default output style\n"
-};
+static const char usage[] = {"Usage: cksum [Option]... [File]...\n"
+                             "  --version   version information\n"
+                             "  --help      display this help and exit\n"
+                             "  --raw       output raw crc\n"
+                             "  --tag       default output style\n"};
 
-//flags
+// flags
 static int output_format = 't';
 
 static struct option long_options[] = {
-	{"version", no_argument, NULL, 'v'},
-	{"help", no_argument, NULL, 'h'},
-	{"raw", no_argument, NULL, 'r'},
-	{"tag", no_argument, NULL, 't'},
+    {"version", no_argument, NULL, 'v'},
+    {"help", no_argument, NULL, 'h'},
+    {"raw", no_argument, NULL, 'r'},
+    {"tag", no_argument, NULL, 't'},
 };
-
 
 static const uint32_t crc32_ = 0x04c11db7;
 
@@ -84,25 +81,27 @@ uint32_t crc32(FILE *file, size_t *octets) {
   return ~((remainder << 8) | (difference & 0xff));
 }
 
-void crc_print(char *filename, uint32_t crc, size_t octets){
+void crc_print(char *filename, uint32_t crc, size_t octets) {
   printf("%c\n", output_format);
-  switch(output_format){
-    case 't':
-      if(filename == NULL)
-        printf("%u %lu\n", crc, octets);
-      else
-        printf("%u %lu %s\n", crc, octets, filename);
-      break;
-    case 'r':
-      printf("%c%c%c%c", (crc >> 24) & 255, (crc >> 16) & 255, (crc >> 8) & 255, crc & 255);
-      break;
+  switch (output_format) {
+  case 't':
+    if (filename == NULL)
+      printf("%u %lu\n", crc, octets);
+    else
+      printf("%u %lu %s\n", crc, octets, filename);
+    break;
+  case 'r':
+    printf("%c%c%c%c", (crc >> 24) & 255, (crc >> 16) & 255, (crc >> 8) & 255,
+           crc & 255);
+    break;
   }
 }
 
 int main(int argc, char **argv) {
 
   int opt, option_index;
-  while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+  while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
+         -1) {
     switch (opt) {
     case 0:
       break;
@@ -135,7 +134,7 @@ int main(int argc, char **argv) {
   for (; index < argc; index++) {
     FILE *file = fopen(argv[index], "r+");
 
-    if (file == NULL){
+    if (file == NULL) {
       fprintf(stderr, "cksum: %s: %s\n", argv[index], strerror(errno));
       continue;
     }
