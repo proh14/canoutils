@@ -76,6 +76,7 @@ src/rm/rm
 src/rmdir/rmdir
 src/sh/sh
 src/sleep/sleep
+src/sleep/cksum
 
 bin/
 
