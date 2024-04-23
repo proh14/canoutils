@@ -144,11 +144,11 @@ int getopt_long(int argc, char *argv[], const char *optstring,
     nextchar++;
     const struct option *curlong = longopts;
     while (curlong->name != NULL) {
-      if (strcmp(curlong->name, nextchar) == 0) {
+      size_t name_len = strlen(curlong->name);
+      if (strncmp(curlong->name, nextchar, name_len) == 0) {
         if (longindex != NULL)
           *longindex = curlong - longopts;
         optind++;
-        nextchar = NULL;
         if (longopts->flag) {
           *curlong->flag = curlong->val;
           c = 0;
@@ -159,17 +159,23 @@ int getopt_long(int argc, char *argv[], const char *optstring,
             ((coropt + 1) >= argc || argv[(coropt + 1)][0] == '-'))
           goto exit;
         if (curlong->has_arg) {
-          EXCHANGE(coropt);
-          coropt++;
-          if (coropt >= argc || argv[coropt][0] == '-') {
-            getopt_printerr("option requires an argument\n");
-            optopt = curlong->val;
-            c = '?';
-            goto exit;
+          if (*(nextchar + name_len) != '=') {
+            nextchar = NULL;
+            EXCHANGE(coropt);
+            coropt++;
+            if (coropt >= argc || argv[coropt][0] == '-') {
+              getopt_printerr("option requires an argument\n");
+              optopt = curlong->val;
+              c = '?';
+              goto exit;
+            }
+            optarg = argv[coropt];
+            optind++;
+          } else {
+            optarg = nextchar + (name_len + 1);
           }
-          optarg = argv[coropt];
-          optind++;
         }
+        nextchar = NULL;
         goto exit;
       }
       curlong++;
