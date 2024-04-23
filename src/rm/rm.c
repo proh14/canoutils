@@ -28,17 +28,17 @@ int rm(char *filename, int flags);
 enum {
   F_HELP = -2,
   F_VERSION = -3,
-  F_NO_PRESERVE = -4,  
-  F_PRESERVE = -5,  
+  F_NO_PRESERVE = -4,
+  F_PRESERVE = -5,
   F_ONE_FILESYSTEM = -6,
 };
 
 static const struct option longopts[] = {
-    {"version", no_argument, NULL, F_VERSION},  
+    {"version", no_argument, NULL, F_VERSION},
     {"help", no_argument, NULL, F_HELP},
     {"no-preserve-root", no_argument, NULL, F_NO_PRESERVE},
     {"preserve-root", no_argument, NULL, F_PRESERVE},
-    {"one-file-system", no_argument, NULL, F_ONE_FILESYSTEM},    
+    {"one-file-system", no_argument, NULL, F_ONE_FILESYSTEM},
     {"verbose", no_argument, NULL, 'v'},
     {"recursive", no_argument, NULL, 'r'},
     {"dir", no_argument, NULL, 'd'},
@@ -55,22 +55,6 @@ enum {
   F_DIR = 1 << 7,
   F_VERBOSE = 1 << 8,
 };
-
-#define print_not_enough()                                                     \
-  do {                                                                         \
-    fprintf(stderr, "not enough args\n");                                      \
-    fprintf(stderr, "see rm --help\n");                                        \
-    exit(1);                                                                   \
-  } while (0)
-
-#define shift_flags()                                                          \
-  do {                                                                         \
-    if (argc == 0) {                                                           \
-      print_not_enough();                                                      \
-    }                                                                          \
-    flag = *shift(&argc, &argv);                                               \
-    filename = flag;                                                           \
-  } while (0)
 
 char **shift(int *argc, char ***argv) {
   char **result = *argv;
@@ -193,15 +177,13 @@ int main(int argc, char **argv) {
   char *program = argv[0];
   (void)program;
   char *filename = NULL;
-  if (argc == 0) {
+  if (argc < 2) {
     fprintf(stderr, "not enough args\n");
     fprintf(stderr, "see rm --help\n");
     exit(1);
   }
 
   int flags = 0;
-
-  //  &= ~(flags)
 
   int c = getopt_long(argc, argv, "viIdfr", longopts, NULL);
   while (c != -1) {
@@ -230,8 +212,8 @@ int main(int argc, char **argv) {
       flags |= F_DIR;
       break;
     case 'f':
-      flags &= ~(F_PROMPT);          
-      flags &= ~(F_INTRUSIVE);          
+      flags &= ~(F_PROMPT);
+      flags &= ~(F_INTRUSIVE);
       flags |= F_FORCE;
       break;
     case 'R':
@@ -270,6 +252,8 @@ int main(int argc, char **argv) {
   argv += optind;
   argc -= optind;
 
+  if(argc > 3 && (flags & F_INTRUSIVE)) flags |= F_PROMPT;
+
   filename = *shift(&argc, &argv);
 
   if (argc > 2 && (flags & F_RECURSIVE)) {
@@ -280,7 +264,7 @@ int main(int argc, char **argv) {
       fprintf(stderr, "error: EOF\n");
       exit(1);
     }
-    if (strncmp(prompt, "y", sizeof("y")) != 0)
+    if (strncmp(prompt, "y", 1) != 0)
       exit(0);
   }
 
@@ -298,7 +282,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "error: EOF\n");
         exit(1);
       }
-      if (strncmp(prompt, "y", sizeof("y") - 1) != 0) {
+      if (strncmp(prompt, "y", 1) != 0) {
         filename = *shift(&argc, &argv);
         continue;
       }
