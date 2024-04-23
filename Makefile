@@ -24,6 +24,7 @@ BINS += ln
 BINS += mv
 BINS += chmod
 BINS += sh
+BINS += sleep
 
 BINARIES := $(foreach b, $(BINS), src/$b/$b)
 BINS-COPY := $(foreach b, $(BINS), bin/$b)
@@ -40,7 +41,7 @@ all: $(BINS-COPY)
 
 $(BINS-COPY): $(BINARIES)
 	@ mkdir -p $(dir $@)
-	$Q cp $< $@ 
+	$Q cp src/$(notdir $@)/$(notdir $@) $@
 
 $(BINARIES):
 	$(call make-rule, $(dir $@), $(notdir $@))

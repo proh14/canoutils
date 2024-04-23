@@ -2,12 +2,20 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
   };
 
   outputs = {
     self,
     nixpkgs,
     flake-utils,
+    pre-commit-hooks,
   }:
     flake-utils.lib.eachSystem [
       "aarch64-darwin"
@@ -16,15 +24,32 @@
       "x86_64-linux"
     ] (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+    in rec {
       formatter = pkgs.alejandra;
 
+      checks = let
+        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            alejandra.enable = true;
+            clang-format.enable = true;
+          };
+        };
+      in
+        if (builtins.elem system flake-utils.lib.defaultSystems)
+        then {inherit pre-commit-check;}
+        else {};
+
       devShells.default = pkgs.mkShell {
-        # inputsFrom = pkgs.lib.attrsets.attrValues packages;
+        inherit (checks.pre-commit-check) shellHook;
+
+        hardeningDisable = ["fortify"];
+        inputsFrom = pkgs.lib.attrsets.attrValues packages;
         packages = with pkgs; [
           bear
           python3Packages.compiledb
           gcovr
+          clang-tools
         ];
       };
 
@@ -75,7 +100,7 @@
               value = build-single-bin name;
             })
             (attrNames (pkgs.lib.filterAttrs
-              (n: v: v == "directory")
+              (n: v: v == "directory" && n != "global")
               (readDir ./src)))));
     });
 }
