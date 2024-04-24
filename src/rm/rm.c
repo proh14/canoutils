@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <linux/limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <linux/limits.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
@@ -82,29 +82,29 @@ void rm_dir(char *filename, int flags) {
   }
 }
 
-static
-char *path_append(char *absp, char const *leaf) {
-    size_t len = strlen(absp);
-    size_t leaf_len = strlen(leaf);
+static char *path_append(char *absp, char const *leaf) {
+  size_t len = strlen(absp);
+  size_t leaf_len = strlen(leaf);
 
-    if (absp[len - 1] == '/')
-        len--;
-    if ((PATH_MAX - len) <= len)
-        return NULL;
-    absp[len] = '/';
-    memcpy(absp + len + 1, leaf, (leaf_len + 1) * sizeof(char));
-    return absp;
+  if (absp[len - 1] == '/')
+    len--;
+  if ((PATH_MAX - len) <= len)
+    return NULL;
+  absp[len] = '/';
+  memcpy(absp + len + 1, leaf, (leaf_len + 1) * sizeof(char));
+  return absp;
 }
-  
+
 void strip_off_slash(char *path) {
   size_t path_s = strlen(path);
   size_t in = path_s;
-  while(path[in] != '/') in--;
+  while (path[in] != '/')
+    in--;
   path[in] = '\0';
 }
 
 void remove_recursively(DIR *dir, char *path, int flags) {
-  if(dir == NULL) {
+  if (dir == NULL) {
     fprintf(stderr, "error: could not open directory: %s\n", strerror(errno));
     exit(1);
   }
@@ -130,14 +130,14 @@ void remove_recursively(DIR *dir, char *path, int flags) {
     if (file->d_type == DT_REG) {
       char *full_path = path_append(path, file->d_name);
       rm(full_path, flags);
-      strip_off_slash(full_path);                    
+      strip_off_slash(full_path);
     } else if (file->d_type == DT_DIR) {
       char *full_path = path_append(path, file->d_name);
       DIR *new_dir = opendir(full_path);
       remove_recursively(new_dir, full_path, flags);
       closedir(new_dir);
       rm_dir(full_path, flags);
-      strip_off_slash(full_path);      
+      strip_off_slash(full_path);
     } else {
       fprintf(stderr, "error\n");
       exit(1);
@@ -161,7 +161,7 @@ int rm(char *filename, int flags) {
     char *full_path = path_append(path, filename);
     remove_recursively(opendir(full_path), full_path, flags);
     rm_dir(full_path, flags);
-    strip_off_slash(full_path);              
+    strip_off_slash(full_path);
     goto rm_end;
   }
 
