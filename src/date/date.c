@@ -16,6 +16,8 @@
 
 #define INITIAL_BUF_SIZE 512
 
+static char *operand;
+
 static struct tm *get_time(void) {
   time_t t;
   if (time(&t) == -1) {
@@ -78,29 +80,111 @@ static int set_time(char *str) {
   return EXIT_SUCCESS;
 }
 
+static void set_operand(char *o) {
+  if (operand) {
+    fprintf(stderr, "date: multiple output formats or dates specified\n");
+    exit(EXIT_FAILURE);
+  }
+  operand = o;
+}
+
+static void use_utc(void) {
+  if (setenv("TZ", "UTC", 1) == -1) {
+    fprintf(stderr, "date: cannot setenv TZ: %s\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+}
+
+static void use_iso_fmt(char *iso) {
+  if (!strcmp(iso, "hours")) {
+    set_operand("+%FT%H%:z");
+  } else if (!strcmp(iso, "minutes")) {
+    set_operand("+%FT%H:%M%:z");
+  } else if (!strcmp(iso, "date")) {
+    set_operand("+%F");
+  } else if (!strcmp(iso, "seconds")) {
+    set_operand("+%FT%H:%M:%S%:z");
+  } else if (!strcmp(iso, "ns")) {
+    set_operand("+%FT%H:%M:%S,%N%:z");
+  } else {
+    fprintf(stderr, "date: invalid argument '%s' for '--iso-8601'\n", iso);
+    fprintf(stderr,
+            "must be one of 'hours', 'minutes', 'date', 'seconds', 'ns'\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
+static void short_opt(char *opt) {
+  switch (*opt) {
+  case 'u':
+    use_utc();
+    break;
+  case 'I':
+    if (opt[1])
+      use_iso_fmt(opt + 1);
+    else
+      use_iso_fmt("date");
+    break;
+  default:
+    fprintf(stderr, "date: unknown option '-%c'\n", *opt);
+    exit(EXIT_FAILURE);
+  }
+}
+
+static bool strpre(const char *pre, const char *str) {
+  return !strncmp(pre, str, strlen(pre));
+}
+
+static void long_opt(char *opt) {
+  if (!strcmp(opt, "version")) {
+    print_version();
+    exit(EXIT_SUCCESS);
+  }
+  if (!strcmp(opt, "help"))
+    exit(system("man date"));
+  if (!strcmp(opt, "utc") || !strcmp(opt, "universal")) {
+    use_utc();
+    return;
+  }
+  if (strpre("iso-8601", opt)) {
+    char *arg = opt + strlen("iso-8601");
+    if (*arg) {
+      if (*arg != '=')
+        goto unknown_opt;
+      use_iso_fmt(arg + 1);
+    } else {
+      use_iso_fmt("date");
+    }
+    return;
+  }
+unknown_opt:
+  fprintf(stderr, "date: unknown option '--%s'\n", opt);
+  exit(EXIT_FAILURE);
+}
+
 int main(int argc, char **argv) {
-  char *operand = "+%a %b %e %H:%M:%S %Z %Y";
+  operand = NULL;
   bool parse_options = true;
   for (int i = 1; i < argc; i++) {
-    if (parse_options) {
-      if (!strcmp(argv[i], "--")) {
-        parse_options = false;
+    if (parse_options && argv[i][0] == '-') {
+      if (argv[i][1] == '-') {
+        char *opt = argv[i] + 2;
+        if (!*opt)
+          parse_options = false;
+        else
+          long_opt(opt);
         continue;
-      }
-      if (!strcmp(argv[i], "--version")) {
-        print_version();
-        return EXIT_SUCCESS;
-      }
-      if (!strcmp(argv[i], "-u")) {
-        if (setenv("TZ", "UTC", 1) == -1) {
-          fprintf(stderr, "date: cannot setenv TZ: %s\n", strerror(errno));
-          return EXIT_FAILURE;
+      } else {
+        if (argv[i][1]) {
+          short_opt(argv[i] + 1);
+          continue;
         }
-        continue;
       }
     }
-    operand = argv[i];
+    set_operand(argv[i]);
   }
+  if (!operand)
+    operand = "+%a %b %e %H:%M:%S %Z %Y";
 
   if (operand[0] != '+')
     return set_time(operand);
@@ -113,7 +197,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "date: malloc failed: %s\n", strerror(errno));
     return EXIT_FAILURE;
   }
-  while (!strftime(buf, cap, &operand[1], tm)) {
+  while (!strftime(buf, cap, operand + 1, tm)) {
     cap *= 2;
     char *new_buf = realloc(buf, cap);
     if (!new_buf) {
