@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,41 +9,76 @@
 #define VERSION "1.0.0"
 #define AUTHOR "Yohann Boniface (Sigmanificient)"
 
+#include "cgetopt.h"
 #include "version_info.h"
 
-static const char FLAGLIST[] = "alRdrt";
 static char DEFAULT_LOCATION[] = ".";
 
+enum {
+  GETOPT_VERSION_CHAR = (CHAR_MIN - 1),
+  GETOPT_SORT_CHAR = (CHAR_MIN - 2),
+};
+
+static const struct option LONG_OPTIONS[] = {
+    {"version", no_argument, NULL, GETOPT_VERSION_CHAR},
+    {"all", no_argument, NULL, 'a'},
+    {"recursive", no_argument, NULL, 'R'},
+    {"directory", no_argument, NULL, 'd'},
+    {"reverse", no_argument, NULL, 'r'},
+    {"sort", required_argument, NULL, GETOPT_SORT_CHAR},
+    {0}};
+
 static char compose_flaglist(int argc, char **argv) {
-  int flags = 0;
+  char flags = 0;
+  int c;
 
-  for (int i = 1; i < argc; i++) {
-    if (argv[i][0] != '-' || argv[i][1] == '\0')
-      continue;
-    for (int j = 1; argv[i][j] != '\0'; j++)
-      flags |= 1 << (stridx(FLAGLIST, argv[i][j]) + 1);
+  while ((c = getopt_long(argc, argv, "alRdrt", LONG_OPTIONS, NULL)) != -1) {
+    switch (c) {
+    case 'a':
+      flags |= F_ALL_FILES;
+      break;
+    case 'l':
+      flags |= F_LONG_FORM;
+      break;
+    case 'R':
+      flags |= F_RECURSIVE;
+      break;
+    case 'd':
+      flags |= F_DIRECTORY;
+      flags &= ~F_RECURSIVE;
+      break;
+    case 'r':
+      flags |= F_REV_ORDER;
+      break;
+    case 't':
+      flags |= F_SORT_TIME;
+      break;
+    case (CHAR_MAX + 1):
+      if (!strcmp(optarg, "time"))
+        flags |= F_SORT_TIME;
+      break;
+    case GETOPT_VERSION_CHAR:
+      print_version();
+      return -1;
+    default:
+      fprintf(stderr, "ls: invalid option -- '%c'\n", c);
+      return -2;
+    }
   }
-  return (char)(flags >> 1);
-}
-
-static size_t count_targets(int argc, char **argv) {
-  int count = 0;
-
-  for (int i = 1; i < argc; i++)
-    if (argv[i][0] != '-' || argv[i][1] == '\0')
-      count++;
-  return count;
+  return flags;
 }
 
 static bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags) {
   int err = 0;
-  size_t count = count_targets(argc, argv);
+  size_t count = argc - optind;
 
   if (count == 0) {
     db->name = DEFAULT_LOCATION;
     err |= list_dir(db, flags);
   }
-  for (int i = 1; i < argc; i++) {
+  argv += optind;
+  argc -= optind;
+  for (int i = 0; i < argc; i++) {
     if (argv[i][0] == '-' && argv[i][1] != '\0')
       continue;
     db->name = argv[i];
@@ -55,20 +91,14 @@ static bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags) {
 
 int main(int argc, char **argv) {
   dirbuff_t db = {.size = MIN_ALLOCATED_ENTRY};
-  char flags;
+  char flags = compose_flaglist(argc, argv);
   int err = 0;
 
-  for (int i = 0; argv[i] != NULL; i++)
-    if (!strcmp(argv[i], "--version")) {
-      print_version();
-      return EXIT_SUCCESS;
-    }
-  flags = compose_flaglist(argc, argv);
+  if (flags < 0)
+    return (flags == -1) ? EXIT_SUCCESS : EXIT_FAILURE;
   db.entries = malloc(db.size * sizeof(*db.entries));
   if (db.entries == NULL)
     return EXIT_FAILURE;
-  if (flags & F_DIRECTORY)
-    flags &= ~F_RECURSIVE;
   err |= !list_dirs(&db, argc, argv, flags);
   free(db.entries);
   return err ? EXIT_SUCCESS : EXIT_FAILURE;
