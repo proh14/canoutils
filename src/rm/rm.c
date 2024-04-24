@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/limits.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
@@ -21,11 +22,13 @@
 struct statvfs cur_filesystem = {0};
 
 char **shift(int *argc, char ***argv);
-void remove_recursively(DIR *dir, int flags);
+static char *path_append(char *absp, char const *leaf);
+void remove_recursively(DIR *dir, char *path, int flags);
 void rm_dir(char *filename, int flags);
 int rm(char *filename, int flags);
 void handle_remove(int *argc, char ***argv, int flags, char *filename);
 void set_flags(int *flags, int *argc, char ***argv);
+
 enum {
   F_HELP = -2,
   F_VERSION = -3,
@@ -79,8 +82,32 @@ void rm_dir(char *filename, int flags) {
   }
 }
 
-void remove_recursively(DIR *dir, int flags) {
-  assert(dir);
+static
+char *path_append(char *absp, char const *leaf) {
+    size_t len = strlen(absp);
+    size_t leaf_len = strlen(leaf);
+
+    if (absp[len - 1] == '/')
+        len--;
+    if ((PATH_MAX - len) <= len)
+        return NULL;
+    absp[len] = '/';
+    memcpy(absp + len + 1, leaf, (leaf_len + 1) * sizeof(char));
+    return absp;
+}
+  
+void strip_off_slash(char *path) {
+  size_t path_s = strlen(path);
+  size_t in = path_s;
+  while(path[in] != '/') in--;
+  path[in] = '\0';
+}
+
+void remove_recursively(DIR *dir, char *path, int flags) {
+  if(dir == NULL) {
+    fprintf(stderr, "error: could not open directory: %s\n", strerror(errno));
+    exit(1);
+  }
   struct dirent *file = readdir(dir);
   while (file != NULL) {
     if (strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..") == 0) {
@@ -101,20 +128,16 @@ void remove_recursively(DIR *dir, int flags) {
       }
     }
     if (file->d_type == DT_REG) {
-      rm(file->d_name, flags);
+      char *full_path = path_append(path, file->d_name);
+      rm(full_path, flags);
+      strip_off_slash(full_path);                    
     } else if (file->d_type == DT_DIR) {
-      DIR *new_dir = opendir(file->d_name);
-      if (chdir(file->d_name) == -1) {
-        fprintf(stderr, "couldn't change directories %d\n", errno);
-        exit(1);
-      }
-      remove_recursively(new_dir, flags);
-      if (chdir("..") == -1) {
-        fprintf(stderr, "could not change directories %d\n", errno);
-        exit(1);
-      }
+      char *full_path = path_append(path, file->d_name);
+      DIR *new_dir = opendir(full_path);
+      remove_recursively(new_dir, full_path, flags);
       closedir(new_dir);
-      rm_dir(file->d_name, flags);
+      rm_dir(full_path, flags);
+      strip_off_slash(full_path);      
     } else {
       fprintf(stderr, "error\n");
       exit(1);
@@ -133,16 +156,12 @@ int rm(char *filename, int flags) {
   }
 
   if (is_dir != NULL && (flags & F_RECURSIVE)) {
-    if (chdir(filename) == -1) {
-      fprintf(stderr, "could not change directories\n");
-      exit(1);
-    }
-    remove_recursively(opendir("."), flags);
-    if (chdir("..") == -1) {
-      fprintf(stderr, "could not change directories\n");
-      exit(1);
-    }
-    rm_dir(filename, flags);
+    char path[PATH_MAX] = {0};
+    getcwd(path, PATH_MAX);
+    char *full_path = path_append(path, filename);
+    remove_recursively(opendir(full_path), full_path, flags);
+    rm_dir(full_path, flags);
+    strip_off_slash(full_path);              
     goto rm_end;
   }
 
@@ -158,7 +177,7 @@ int rm(char *filename, int flags) {
     }
   }
   if (is_dir != NULL && closedir(is_dir) == -1) {
-    fprintf(stderr, "could not close dir %s\n", filename);
+    fprintf(stderr, "could not close dir `%s`\n", filename);
   }
 
 rm_end:
@@ -167,7 +186,7 @@ rm_end:
 rm_defer:
   if (is_dir != NULL) {
     if (closedir(is_dir) == -1) {
-      fprintf(stderr, "could not close dir %s\n", filename);
+      fprintf(stderr, "could not close dir `%s`\n", filename);
     }
     exit(1);
   }
@@ -175,25 +194,25 @@ rm_defer:
 }
 
 void handle_remove(int *argc, char ***argv, int flags, char *filename) {
-    if (strcmp(filename, "/") == 0 && !(flags & F_NPR)) {
-      printf("cannot remove root directory (see --no-preserve-root)\n");
+  if (strcmp(filename, "/") == 0 && !(flags & F_NPR)) {
+    printf("cannot remove root directory (see --no-preserve-root)\n");
+    filename = *shift(argc, argv);
+    return;
+  }
+  if (flags & F_PROMPT) {
+    printf("remove file `%s`? ", filename);
+    char prompt[16] = {0};
+    char *err = fgets(prompt, 16, stdin);
+    if (err == NULL) {
+      fprintf(stderr, "error: EOF\n");
+      exit(1);
+    }
+    if (strncmp(prompt, "y", 1) != 0) {
       filename = *shift(argc, argv);
       return;
     }
-    if (flags & F_PROMPT) {
-      printf("remove file `%s`? ", filename);
-      char prompt[16] = {0};
-      char *err = fgets(prompt, 16, stdin);
-      if (err == NULL) {
-        fprintf(stderr, "error: EOF\n");
-        exit(1);
-      }
-      if (strncmp(prompt, "y", 1) != 0) {
-        filename = *shift(argc, argv);
-        return;
-      }
-    }
-    rm(filename, flags);
+  }
+  rm(filename, flags);
 }
 
 void set_flags(int *flags, int *argc, char ***argv) {
@@ -264,7 +283,8 @@ void set_flags(int *flags, int *argc, char ***argv) {
   *argv += optind;
   *argc -= optind;
 
-  if(*argc > 3 && (*flags & F_INTRUSIVE)) *flags |= F_PROMPT;
+  if (*argc > 3 && (*flags & F_INTRUSIVE))
+    *flags |= F_PROMPT;
 }
 
 int main(int argc, char **argv) {
@@ -293,7 +313,7 @@ int main(int argc, char **argv) {
       exit(0);
   }
 
-  while(argc >= 0) {
+  while (argc >= 0) {
     handle_remove(&argc, &argv, flags, filename);
     filename = *shift(&argc, &argv);
   }
