@@ -30,12 +30,9 @@ static const struct option LONG_OPTIONS[] = {
 
 static char compose_flaglist(int argc, char **argv) {
   char flags = 0;
+  int c;
 
-  for (;;) {
-    int c = getopt_long(argc, argv, "alRdrt", LONG_OPTIONS, NULL);
-
-    if (c == -1)
-      return flags;
+  while ((c = getopt_long(argc, argv, "alRdrt", LONG_OPTIONS, NULL)) != -1) {
     switch (c) {
     case 'a':
       flags |= F_ALL_FILES;
@@ -68,6 +65,7 @@ static char compose_flaglist(int argc, char **argv) {
       return -2;
     }
   }
+  return flags;
 }
 
 static bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags) {
