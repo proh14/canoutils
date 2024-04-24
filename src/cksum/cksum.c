@@ -29,7 +29,7 @@ static struct option long_options[] = {
 
 static const uint32_t crc32_ = 0x04c11db7;
 
-uint32_t crc32(FILE *file, size_t *octets) {
+static uint32_t crc32(FILE *file, size_t *octets) {
   uint32_t remainder = 0;
   uint8_t difference = 0;
 
@@ -81,7 +81,7 @@ uint32_t crc32(FILE *file, size_t *octets) {
   return ~((remainder << 8) | (difference & 0xff));
 }
 
-void crc_print(char *filename, uint32_t crc, size_t octets) {
+static void crc_print(char *filename, uint32_t crc, size_t octets) {
   switch (output_format) {
   case 't':
     if (filename == NULL)
