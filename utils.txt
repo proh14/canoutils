@@ -23,3 +23,5 @@ rm
 rmdir
 sleep
 cksum
+true
+false
