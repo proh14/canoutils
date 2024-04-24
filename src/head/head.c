@@ -12,9 +12,10 @@
 
 static const char usage[] = {
      "Usage: head [Option]... [File]...\n"
-     "  --version   version information\n"
-     "  --help      display this help and exit\n"
-     "  -n          number of lines to print form each file\n"
+     "  --version     version information\n"
+     "  --help        display this help and exit\n"
+     "  -n            number of lines to print form each file\n"
+     "  -q, --quiet   do not print file headers\n"
 };
 
 // flags
@@ -33,7 +34,7 @@ static void print_head(char *path, FILE *file){
   size_t nl_count = 0;
   int cur_char;
 
-  if(path != NULL)
+  if(path != NULL && verbose)
   	printf("\n==> %s <==\n", path);
 
   while(nl_count < lines){
