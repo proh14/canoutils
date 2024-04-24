@@ -30,10 +30,9 @@ static const struct option LONG_OPTIONS[] = {
 
 static char compose_flaglist(int argc, char **argv) {
   char flags = 0;
-  int oi = -1;
 
   for (;;) {
-    int c = getopt_long(argc, argv, "alRdrt", LONG_OPTIONS, &oi);
+    int c = getopt_long(argc, argv, "alRdrt", LONG_OPTIONS, NULL);
 
     if (c == -1)
       return flags;
@@ -49,6 +48,7 @@ static char compose_flaglist(int argc, char **argv) {
       break;
     case 'd':
       flags |= F_DIRECTORY;
+      flags &= ~F_RECURSIVE;
       break;
     case 'r':
       flags |= F_REV_ORDER;
@@ -101,8 +101,6 @@ int main(int argc, char **argv) {
   db.entries = malloc(db.size * sizeof(*db.entries));
   if (db.entries == NULL)
     return EXIT_FAILURE;
-  if (flags & F_DIRECTORY)
-    flags &= ~F_RECURSIVE;
   err |= !list_dirs(&db, argc, argv, flags);
   free(db.entries);
   return err ? EXIT_SUCCESS : EXIT_FAILURE;
