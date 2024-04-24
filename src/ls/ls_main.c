@@ -70,24 +70,17 @@ static char compose_flaglist(int argc, char **argv) {
   }
 }
 
-static size_t count_targets(int argc, char **argv) {
-  int count = 0;
-
-  for (int i = 1; i < argc; i++)
-    if (argv[i][0] != '-' || argv[i][1] == '\0')
-      count++;
-  return count;
-}
-
 static bool list_dirs(dirbuff_t *db, int argc, char **argv, char flags) {
   int err = 0;
-  size_t count = count_targets(argc, argv);
+  size_t count = argc - optind;
 
   if (count == 0) {
     db->name = DEFAULT_LOCATION;
     err |= list_dir(db, flags);
   }
-  for (int i = 1; i < argc; i++) {
+  argv += optind;
+  argc -= optind;
+  for (int i = 0; i < argc; i++) {
     if (argv[i][0] == '-' && argv[i][1] != '\0')
       continue;
     db->name = argv[i];
