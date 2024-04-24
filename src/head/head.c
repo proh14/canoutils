@@ -11,12 +11,11 @@
 #include "version_info.h"
 
 static const char usage[] = {
-     "Usage: head [Option]... [File]...\n"
-     "  --version     version information\n"
-     "  --help        display this help and exit\n"
-     "  -n            number of lines to print form each file\n"
-     "  -q, --quiet   do not print file headers\n"
-};
+    "Usage: head [Option]... [File]...\n"
+    "  --version     version information\n"
+    "  --help        display this help and exit\n"
+    "  -n            number of lines to print form each file\n"
+    "  -q, --quiet   do not print file headers\n"};
 
 // flags
 static size_t lines = 10;
@@ -29,25 +28,23 @@ static struct option long_options[] = {
     {"quiet", no_argument, NULL, 'q'},
 };
 
-
-static void print_head(char *path, FILE *file){
+static void print_head(char *path, FILE *file) {
   size_t nl_count = 0;
   int cur_char;
 
-  if(path != NULL && verbose)
-  	printf("\n==> %s <==\n", path);
+  if (path != NULL && verbose)
+    printf("\n==> %s <==\n", path);
 
-  while(nl_count < lines){
-  	if((cur_char = getc(file)) == '\n')
-		nl_count++;
+  while (nl_count < lines) {
+    if ((cur_char = getc(file)) == '\n')
+      nl_count++;
 
-	if(cur_char == EOF)
-	  return;
+    if (cur_char == EOF)
+      return;
 
-	putchar(cur_char);
+    putchar(cur_char);
   }
 }
-
 
 int main(int argc, char **argv) {
   int opt, option_index;
@@ -64,9 +61,9 @@ int main(int argc, char **argv) {
       printf("%s\n", usage);
       return EXIT_SUCCESS;
     case 'n':
-      if(sscanf(optarg, "%lu", &lines) != 1){
-    	fprintf(stderr, "head: line count should be a positive integer");
-	return EXIT_FAILURE;
+      if (sscanf(optarg, "%lu", &lines) != 1) {
+        fprintf(stderr, "head: line count should be a positive integer");
+        return EXIT_FAILURE;
       }
       break;
     case 'q':
@@ -84,7 +81,7 @@ int main(int argc, char **argv) {
     print_head(NULL, stdin);
     return EXIT_SUCCESS;
   }
-  
+
   if (argc > 1 && verbose)
     print_header = 1;
 
