@@ -106,9 +106,9 @@ static void use_iso_fmt(char *iso) {
   } else if (!strcmp(iso, "date")) {
     set_operand("+%F");
   } else if (!strcmp(iso, "seconds")) {
-    set_operand("+%FT%H:%M:%S%:z");
+    set_operand("+%FT%T%:z");
   } else if (!strcmp(iso, "ns")) {
-    set_operand("+%FT%H:%M:%S,%N%:z");
+    set_operand("+%FT%T,%N%:z");
   } else {
     fprintf(stderr, "date: invalid argument '%s' for '--iso-8601'\n", iso);
     fprintf(stderr,
@@ -116,6 +116,22 @@ static void use_iso_fmt(char *iso) {
     exit(EXIT_FAILURE);
   }
 }
+
+static void use_rfc3339_fmt(char *rfc) {
+  if (!strcmp(rfc, "date")) {
+    set_operand("+%F");
+  } else if (!strcmp(rfc, "seconds")) {
+    set_operand("+%F %T%:z");
+  } else if (!strcmp(rfc, "ns")) {
+    set_operand("+%F %T.%N%:z");
+  } else {
+    fprintf(stderr, "date: invalid argument '%s' for '--rfc-3339'\n", rfc);
+    fprintf(stderr, "must be one of 'date', 'seconds', 'ns'\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
+static void use_rfc_mail_fmt(void) { set_operand("+%a, %d %b %Y %T %z"); }
 
 static void short_opt(char *opt) {
   switch (*opt) {
@@ -127,6 +143,9 @@ static void short_opt(char *opt) {
       use_iso_fmt(opt + 1);
     else
       use_iso_fmt("date");
+    break;
+  case 'R':
+    use_rfc_mail_fmt();
     break;
   default:
     fprintf(stderr, "date: unknown option '-%c'\n", *opt);
@@ -149,6 +168,10 @@ static void long_opt(char *opt) {
     use_utc();
     return;
   }
+  if (!strcmp(opt, "rfc-email")) {
+    use_rfc_mail_fmt();
+    return;
+  }
   if (strpre("iso-8601", opt)) {
     char *arg = opt + strlen("iso-8601");
     if (*arg) {
@@ -158,6 +181,13 @@ static void long_opt(char *opt) {
     } else {
       use_iso_fmt("date");
     }
+    return;
+  }
+  if (strpre("rfc-3339", opt)) {
+    char *arg = opt + strlen("rfc-3339");
+    if (*arg != '=')
+      goto unknown_opt;
+    use_rfc3339_fmt(arg + 1);
     return;
   }
 unknown_opt:
