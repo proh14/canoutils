@@ -18,13 +18,15 @@
 
 static char *operand;
 
-static struct tm *get_time(void) {
-  time_t t;
-  if (time(&t) == -1) {
+static struct tm *get_time(long *nanos) {
+  struct timespec ts;
+  if (clock_gettime(CLOCK_REALTIME, &ts)) {
     fprintf(stderr, "date: failed to retrieve time: %s\n", strerror(errno));
     exit(EXIT_FAILURE);
   }
-  return localtime(&t);
+  if (nanos)
+    *nanos = ts.tv_nsec;
+  return localtime(&ts.tv_sec);
 }
 
 static int set_time(char *str) {
@@ -38,7 +40,8 @@ static int set_time(char *str) {
 
 #define s(i) (str[i] - '0')
   struct tm tm;
-  memcpy(&tm, get_time(), sizeof tm);
+  long ns;
+  memcpy(&tm, get_time(&ns), sizeof tm);
   bool century_specified = false;
   switch (n) {
   case 12:
@@ -72,7 +75,7 @@ static int set_time(char *str) {
     fprintf(stderr, "date: '%s' does not specify a valid time\n", str);
     return EXIT_FAILURE;
   }
-  struct timespec ts = {.tv_sec = t};
+  struct timespec ts = {.tv_sec = t, .tv_nsec = ns};
   if (clock_settime(CLOCK_REALTIME, &ts)) {
     fprintf(stderr, "date: cannot set date: %s\n", strerror(errno));
     return EXIT_FAILURE;
@@ -162,6 +165,97 @@ unknown_opt:
   exit(EXIT_FAILURE);
 }
 
+/**
+ * Works just like strftime, except it recognizes formats like %N or %:z which
+ * are specified by the GNU date utility but not by the glibc strftime
+ * implementation.
+ *
+ * Currently missing: %::z, %:::z
+ */
+static size_t extended_strftime(char *restrict buf, size_t max,
+                                const char *restrict fmt,
+                                const struct tm *restrict tm, long nanos) {
+  size_t fmt_size = strlen(fmt) + 1;
+  char *f = malloc(fmt_size);
+  if (!f) {
+    fprintf(stderr, "date: malloc failed: %s\n", strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  // copy the fmt string into buffer so that we can mutate it
+  memcpy(f, fmt, fmt_size);
+  size_t n = 0;
+  char c;
+  int i, j = 0;
+  for (i = 0; (c = f[i]); i++) {
+    if (c != '%')
+      continue;
+    switch (f[i + 1]) {
+    case '%':
+      i++; // skip additional %
+      continue;
+    case ':':
+      if (f[i + 2] != 'z')
+        continue;
+      // fallthrough
+    case 'N':
+      if (i > j) {
+        // evaluate the "normal" format string until i using strftime
+        f[i] = '\0'; // tells strftime to stop at i
+        size_t m = strftime(buf, max - n, f + j, tm);
+        if (m == 0) {
+          free(f);
+          return 0;
+        }
+        n += m;
+        buf += m;
+      }
+      break;
+    default:
+      continue;
+    }
+    switch (f[i + 1]) {
+    case ':':            // means %:z
+      if (max - n < 7) { // need at least 7 bytes: +hh:mm\0
+        free(f);
+        return 0;
+      }
+      strftime(buf, 6, "%z", tm); // write +hhmm\0
+      memmove(buf + 4, buf + 3, 2);
+      buf[3] = ':';
+      n += 6;
+      buf += 6;
+      j = i + 3;
+      break;
+    case 'N':
+      if (max - n < 10) {
+        free(f);
+        return 0;
+      }
+      snprintf(buf, 10, "%09ld", nanos);
+      n += 9;
+      buf += 9;
+      j = i + 2;
+      break;
+    default:
+      __builtin_unreachable();
+    }
+    i = j - 1;
+  }
+  if (i > j) {
+    // evaluate the "normal" format string until i using strftime
+    size_t m = strftime(buf, max - n, f + j, tm);
+    if (m == 0) {
+      free(f);
+      return 0;
+    }
+    n += m;
+    buf += m;
+  }
+  *buf = '\0';
+  free(f);
+  return n;
+}
+
 int main(int argc, char **argv) {
   operand = NULL;
   bool parse_options = true;
@@ -189,7 +283,8 @@ int main(int argc, char **argv) {
   if (operand[0] != '+')
     return set_time(operand);
 
-  struct tm *tm = get_time();
+  long ns;
+  struct tm *tm = get_time(&ns);
 
   size_t cap = INITIAL_BUF_SIZE;
   char *buf = malloc(cap);
@@ -197,7 +292,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "date: malloc failed: %s\n", strerror(errno));
     return EXIT_FAILURE;
   }
-  while (!strftime(buf, cap, operand + 1, tm)) {
+  while (!extended_strftime(buf, cap, operand + 1, tm, ns)) {
     cap *= 2;
     char *new_buf = realloc(buf, cap);
     if (!new_buf) {
