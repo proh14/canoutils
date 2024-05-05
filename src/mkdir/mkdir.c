@@ -23,6 +23,7 @@ static mode_t mode = 0777;
 static int pflag = 0;
 static int vflag = 0;
 
+// TODO: implement getmode and setmode functions from bsd to support symbolic
 int str_to_mode(const char *str, mode_t *mode) {
   char *endptr = NULL;
   *mode = (mode_t)strtol(str, &endptr, 8);
